@@ -128,16 +128,16 @@ namespace VGamepadWeb.Core
                     }
                     else // Horizontal / Landscape style (default)
                     {
-                        // DSU X = Web Y, DSU Y = -Web X, DSU Z = Web Z
-                        ax = web_ay / 9.80665f;
-                        ay = -web_ax / 9.80665f;
-                        az = web_az / 9.80665f;
+                        // DSU X = -Web Y, DSU Y = -Web Z, DSU Z = Web X
+                        ax = -web_ay / 9.80665f;
+                        ay = -web_az / 9.80665f;
+                        az = web_ax / 9.80665f;
 
                         // Gyroscope axes mapping:
-                        // DSU Pitch = Web gamma (gz), DSU Yaw = Web alpha (gx), DSU Roll = Web beta (gy)
+                        // DSU Pitch = Web gamma, DSU Yaw = -Web beta, DSU Roll = -Web alpha
                         gx = web_gamma;
-                        gy = web_alpha;
-                        gz = web_beta;
+                        gy = -web_beta;
+                        gz = -web_alpha;
                     }
 
                     _motionServer.UpdateMotion(slot, gx, gy, gz, ax, ay, az);

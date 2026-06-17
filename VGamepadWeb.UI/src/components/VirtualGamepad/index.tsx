@@ -1,6 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { GamepadLayout, ThemeType } from './types';
-import { LAYOUT_KEY, URL_KEY, DEFAULT_LAYOUT, THEMES, BTN_IDS, STICK_IDS } from './constants';
+import { 
+  LAYOUT_KEY, 
+  URL_KEY, 
+  DEFAULT_LAYOUT, 
+  DEFAULT_PORTRAIT_LAYOUT, 
+  JOY_LEFT_LAYOUT, 
+  JOY_LEFT_PORTRAIT_LAYOUT, 
+  JOY_RIGHT_LAYOUT, 
+  JOY_RIGHT_PORTRAIT_LAYOUT, 
+  THEMES, 
+  BTN_IDS, 
+  STICK_IDS 
+} from './constants';
 import { loadLayout, clamp } from './utils';
 import { GpButton } from './GpButton';
 import { GpJoystick } from './GpJoystick';
@@ -15,18 +27,36 @@ const VirtualGamepadInner: React.FC = () => {
   const { t } = useLanguage();
   const [activeProfile, setActiveProfile] = useState<string>(() => localStorage.getItem('gamepad_active_profile') || 'default');
   const [profiles, setProfiles] = useState<{id: string, name: string}[]>(() => {
+    const builtIn = [
+      { id: 'default', name: 'Default' },
+      { id: 'joy_left', name: 'Joy-Con (L)' },
+      { id: 'joy_right', name: 'Joy-Con (R)' }
+    ];
     try { 
       const p = localStorage.getItem('gamepad_profiles');
-      if (p) return JSON.parse(p);
+      if (p) {
+        const parsed = JSON.parse(p) as { id: string, name: string }[];
+        const merged = [...parsed];
+        builtIn.forEach(bi => {
+          if (!merged.some(x => x.id === bi.id)) {
+            merged.push(bi);
+          }
+        });
+        return merged;
+      }
     } catch {}
-    return [{ id: 'default', name: 'Default' }];
+    return builtIn;
   });
 
   const [theme, setTheme] = useState<ThemeType>(() => (localStorage.getItem('gamepad_theme') as ThemeType) || 'xbox');
+  const [isPortrait, setIsPortrait] = useState(() => window.innerHeight > window.innerWidth);
+  const layoutOrientationRef = useRef(isPortrait);
+
   const [layout, setLayout] = useState<GamepadLayout>(() => {
     const initialTheme = (localStorage.getItem('gamepad_theme') as ThemeType) || 'xbox';
     const initialProfile = localStorage.getItem('gamepad_active_profile') || 'default';
-    return loadLayout(initialTheme, initialProfile);
+    const initialPortrait = window.innerHeight > window.innerWidth;
+    return loadLayout(initialTheme, initialProfile, initialPortrait);
   });
   
   const [editMode, setEditMode] = useState(false);
@@ -70,6 +100,21 @@ const VirtualGamepadInner: React.FC = () => {
     }
   }, [editMode]);
 
+  // Screen orientation listener
+  useEffect(() => {
+    const handleResize = () => {
+      setIsPortrait(window.innerHeight > window.innerWidth);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Update layout when theme, activeProfile, or screen orientation changes
+  useEffect(() => {
+    setLayout(loadLayout(theme, activeProfile, isPortrait));
+    layoutOrientationRef.current = isPortrait;
+  }, [theme, activeProfile, isPortrait]);
+
   // Fullscreen support
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -98,7 +143,12 @@ const VirtualGamepadInner: React.FC = () => {
   };
 
   // Persist
-  useEffect(() => { localStorage.setItem(`${LAYOUT_KEY}_${activeProfile}_${theme}`, JSON.stringify(layout)); }, [layout, theme, activeProfile]);
+  useEffect(() => { 
+    if (layoutOrientationRef.current === isPortrait) {
+      const suffix = isPortrait ? '_portrait' : '_landscape';
+      localStorage.setItem(`${LAYOUT_KEY}_${activeProfile}_${theme}${suffix}`, JSON.stringify(layout));
+    }
+  }, [layout, theme, activeProfile, isPortrait]);
   useEffect(() => { localStorage.setItem('gamepad_theme', theme); }, [theme]);
   useEffect(() => { localStorage.setItem('gamepad_active_profile', activeProfile); }, [activeProfile]);
   useEffect(() => { localStorage.setItem('gamepad_profiles', JSON.stringify(profiles)); }, [profiles]);
@@ -143,8 +193,7 @@ const VirtualGamepadInner: React.FC = () => {
 
   const switchProfile = useCallback((profileId: string) => {
     setActiveProfile(profileId);
-    setLayout(loadLayout(theme, profileId));
-  }, [theme]);
+  }, []);
 
   const createNewProfile = () => {
     const name = prompt(t.newProfilePrompt);
@@ -152,11 +201,14 @@ const VirtualGamepadInner: React.FC = () => {
       const newId = 'p_' + Date.now();
       setProfiles(prev => [...prev, { id: newId, name: name.trim() }]);
       setActiveProfile(newId);
-      setLayout(loadLayout(theme, newId));
     }
   };
 
   const deleteProfile = (profileId: string) => {
+    if (profileId === 'default' || profileId === 'joy_left' || profileId === 'joy_right') {
+      alert(t.cannotDeleteBuiltIn);
+      return;
+    }
     if (profiles.length <= 1) return alert(t.cannotDeleteOnly);
     if (window.confirm(t.confirmDeleteProfile)) {
       const newProfiles = profiles.filter(p => p.id !== profileId);
@@ -164,9 +216,12 @@ const VirtualGamepadInner: React.FC = () => {
       if (activeProfile === profileId) {
         const fallback = newProfiles[0].id;
         setActiveProfile(fallback);
-        setLayout(loadLayout(theme, fallback));
       }
-      Object.keys(THEMES).forEach(t => localStorage.removeItem(`${LAYOUT_KEY}_${profileId}_${t}`));
+      Object.keys(THEMES).forEach(t => {
+        localStorage.removeItem(`${LAYOUT_KEY}_${profileId}_${t}_landscape`);
+        localStorage.removeItem(`${LAYOUT_KEY}_${profileId}_${t}_portrait`);
+        localStorage.removeItem(`${LAYOUT_KEY}_${profileId}_${t}`);
+      });
     }
   };
 
@@ -240,7 +295,20 @@ const VirtualGamepadInner: React.FC = () => {
     setSelectedControl(prev => prev === id ? null : prev);
   }, []);
 
-  const resetLayout = () => { setLayout(DEFAULT_LAYOUT); setMenuOpen(false); setSelectedControl(null); setVisibilityMenuOpen(false); };
+  const resetLayout = () => {
+    let defaultL = DEFAULT_LAYOUT;
+    if (activeProfile === 'joy_left') {
+      defaultL = isPortrait ? JOY_LEFT_PORTRAIT_LAYOUT : JOY_LEFT_LAYOUT;
+    } else if (activeProfile === 'joy_right') {
+      defaultL = isPortrait ? JOY_RIGHT_PORTRAIT_LAYOUT : JOY_RIGHT_LAYOUT;
+    } else {
+      defaultL = isPortrait ? DEFAULT_PORTRAIT_LAYOUT : DEFAULT_LAYOUT;
+    }
+    setLayout(defaultL);
+    setMenuOpen(false);
+    setSelectedControl(null);
+    setVisibilityMenuOpen(false);
+  };
 
   const exportLayout = () => {
     const blob = new Blob([JSON.stringify(layout, null, 2)], { type: 'application/json' });

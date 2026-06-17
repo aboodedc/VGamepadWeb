@@ -23,6 +23,21 @@ namespace VGamepadWeb.Core
             try
             {
                 _server = new UdpClient(new IPEndPoint(IPAddress.Any, 26760));
+
+                // Disable WSAECONNRESET on Windows to avoid SocketException when sending/receiving UDP
+                if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                {
+                    const int SIO_UDP_CONNRESET = -1744830452;
+                    try
+                    {
+                        _server.Client.IOControl(SIO_UDP_CONNRESET, new byte[] { 0 }, null);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[MotionServer] Warning: Could not disable UDP connection reset: {ex.Message}");
+                    }
+                }
+
                 StartListening();
 
                 // 10ms (100Hz) heartbeat to satisfy the emulator's continuous stream requirement
@@ -71,7 +86,7 @@ namespace VGamepadWeb.Core
                                 // Immediately feed it an initial motion packet for any active slots
                                 for (int slot = 0; slot < 256; slot++)
                                 {
-                                    if (_gamepadManager.IsGyroActiveForSlot(slot))
+                                    if (_gamepadManager.IsGyroActiveForSlot(slot) || slot == 0)
                                     {
                                         byte[] packet = BuildCemuHookPacket(slot, 0f, 0f, 0f, 0f, GRAVITY, 0f);
                                         try { _server.Send(packet, packet.Length, result.RemoteEndPoint); } catch { }
@@ -80,9 +95,17 @@ namespace VGamepadWeb.Core
                             }
                         }
                     }
-                    catch
+                    catch (ObjectDisposedException)
                     {
                         break;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (_server == null || _server.Client == null || !_server.Client.IsBound)
+                        {
+                            break;
+                        }
+                        Console.WriteLine($"[MotionServer] StartListening packet error: {ex.Message}");
                     }
                 }
             });
@@ -113,7 +136,10 @@ namespace VGamepadWeb.Core
                 // Send default motion packets to keep connection alive in emulator
                 for (int slot = 0; slot < 256; slot++)
                 {
-                    if (_gamepadManager.IsGyroActiveForSlot(slot))
+                    bool reportAsConnected = (slot == 0) || _gamepadManager.IsGyroActiveForSlot(slot);
+                    bool isCurrentlyActive = _gamepadManager.IsGyroActiveForSlot(slot);
+
+                    if (reportAsConnected && !isCurrentlyActive)
                     {
                         byte[] packet = BuildCemuHookPacket(slot, 0f, 0f, 0f, 0f, GRAVITY, 0f);
                         try
@@ -214,8 +240,9 @@ namespace VGamepadWeb.Core
             response[20] = slot;
 
             bool isSlotActive = _gamepadManager.IsGyroActiveForSlot(slot);
+            bool shouldReportConnected = isSlotActive || (slot == 0);
 
-            if (isSlotActive)
+            if (shouldReportConnected)
             {
                 response[21] = 0x02; // State: Connected
                 response[22] = 0x02; // Model: Full Gyro

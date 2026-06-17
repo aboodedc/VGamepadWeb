@@ -50,6 +50,10 @@ export const translations = {
     confirmDeleteProfile: 'هل أنت متأكد من حذف هذا البروفايل؟',
     invalidFile: 'ملف غير صالح',
     readFileFailed: 'فشل قراءة الملف',
+    profileDefault: 'الافتراضي (يد كاملة)',
+    profileJoyLeft: 'Joy-Con يسار (L)',
+    profileJoyRight: 'Joy-Con يمين (R)',
+    cannotDeleteBuiltIn: 'لا يمكن حذف البروفايلات الافتراضية المدمجة',
 
     // EditBar
     leftStickFull: 'عصا التحكم اليسرى (LS)',
@@ -129,6 +133,10 @@ export const translations = {
     confirmDeleteProfile: 'Are you sure you want to delete this profile?',
     invalidFile: 'Invalid file',
     readFileFailed: 'Failed to read file',
+    profileDefault: 'Default (Full Gamepad)',
+    profileJoyLeft: 'Joy-Con Left (L)',
+    profileJoyRight: 'Joy-Con Right (R)',
+    cannotDeleteBuiltIn: 'Cannot delete built-in default profiles',
 
     // EditBar
     leftStickFull: 'Left Control Stick (LS)',

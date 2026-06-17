@@ -56,7 +56,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             onChange={e => switchProfile(e.target.value)}
             style={{ flex: 1, marginBottom: 0 }}
           >
-            {profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {profiles.map(p => {
+              let name = p.name;
+              if (p.id === 'default') name = t.profileDefault || p.name;
+              else if (p.id === 'joy_left') name = t.profileJoyLeft || p.name;
+              else if (p.id === 'joy_right') name = t.profileJoyRight || p.name;
+              return <option key={p.id} value={p.id}>{name}</option>;
+            })}
           </select>
           <button className="gp-mbtn green" style={{ padding: '0 12px', flex: 'none' }} onClick={createNewProfile}>+</button>
           <button className="gp-mbtn red" style={{ padding: '0 12px', flex: 'none' }} onClick={() => deleteProfile(activeProfile)} disabled={profiles.length <= 1}>-</button>

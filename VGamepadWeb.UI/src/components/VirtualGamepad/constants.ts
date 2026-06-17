@@ -101,3 +101,78 @@ export const DEFAULT_LAYOUT: GamepadLayout = {
     LS: { x: 4, y: 90 }, RS: { x: 91, y: 90 },
   }
 };
+
+export const DEFAULT_PORTRAIT_LAYOUT: GamepadLayout = {
+  version: 2,
+  controls: {
+    LT: { x: 10, y: 35 }, LB: { x: 28, y: 35 },
+    RB: { x: 58, y: 35 }, RT: { x: 76, y: 35 },
+    Back: { x: 32, y: 41 }, Xbox: { x: 48, y: 35 }, Start: { x: 60, y: 41 },
+    Up: { x: 18, y: 48 }, Down: { x: 18, y: 68 },
+    Left: { x: 7, y: 58 }, Right: { x: 29, y: 58 },
+    Y: { x: 78, y: 48 }, X: { x: 67, y: 58 },
+    B: { x: 89, y: 58 }, A: { x: 78, y: 68 },
+    LeftStick: { x: 12, y: 78 }, RightStick: { x: 70, y: 78 },
+    LS: { x: 4, y: 93 }, RS: { x: 88, y: 93 },
+  }
+};
+
+export const JOY_LEFT_LAYOUT: GamepadLayout = {
+  version: 2,
+  controls: {
+    LT: { x: 3, y: 3 }, LB: { x: 16, y: 3 },
+    RB: { x: 74, y: 3, hidden: true }, RT: { x: 87, y: 3, hidden: true },
+    Back: { x: 40, y: 8 }, Xbox: { x: 48, y: 3 }, Start: { x: 55, y: 8, hidden: true },
+    Up: { x: 20, y: 22 }, Down: { x: 20, y: 50 },
+    Left: { x: 11, y: 36 }, Right: { x: 29, y: 36 },
+    Y: { x: 81, y: 18, hidden: true }, X: { x: 72, y: 34, hidden: true },
+    B: { x: 90, y: 34, hidden: true }, A: { x: 81, y: 50, hidden: true },
+    LeftStick: { x: 12, y: 68 }, RightStick: { x: 76, y: 68, hidden: true },
+    LS: { x: 4, y: 90 }, RS: { x: 91, y: 90, hidden: true },
+  }
+};
+
+export const JOY_LEFT_PORTRAIT_LAYOUT: GamepadLayout = {
+  version: 2,
+  controls: {
+    LT: { x: 55, y: 4 }, LB: { x: 5, y: 4 },
+    RB: { x: 74, y: 4, hidden: true }, RT: { x: 87, y: 4, hidden: true },
+    Back: { x: 25, y: 14 }, Xbox: { x: 55, y: 14 }, Start: { x: 55, y: 8, hidden: true },
+    Up: { x: 42, y: 48 }, Down: { x: 42, y: 68 },
+    Left: { x: 20, y: 58 }, Right: { x: 64, y: 58 },
+    Y: { x: 81, y: 18, hidden: true }, X: { x: 72, y: 34, hidden: true },
+    B: { x: 90, y: 34, hidden: true }, A: { x: 81, y: 50, hidden: true },
+    LeftStick: { x: 28, y: 26 }, RightStick: { x: 76, y: 68, hidden: true },
+    LS: { x: 42, y: 82 }, RS: { x: 91, y: 90, hidden: true },
+  }
+};
+
+export const JOY_RIGHT_LAYOUT: GamepadLayout = {
+  version: 2,
+  controls: {
+    LT: { x: 3, y: 3, hidden: true }, LB: { x: 16, y: 3, hidden: true },
+    RB: { x: 74, y: 3 }, RT: { x: 87, y: 3 },
+    Back: { x: 40, y: 8, hidden: true }, Xbox: { x: 48, y: 3 }, Start: { x: 55, y: 8 },
+    Up: { x: 20, y: 22, hidden: true }, Down: { x: 20, y: 50, hidden: true },
+    Left: { x: 11, y: 36, hidden: true }, Right: { x: 29, y: 36, hidden: true },
+    Y: { x: 81, y: 18 }, X: { x: 72, y: 34 },
+    B: { x: 90, y: 34 }, A: { x: 81, y: 50 },
+    LeftStick: { x: 12, y: 68, hidden: true }, RightStick: { x: 76, y: 68 },
+    LS: { x: 4, y: 90, hidden: true }, RS: { x: 91, y: 90 },
+  }
+};
+
+export const JOY_RIGHT_PORTRAIT_LAYOUT: GamepadLayout = {
+  version: 2,
+  controls: {
+    LT: { x: 3, y: 3, hidden: true }, LB: { x: 16, y: 3, hidden: true },
+    RB: { x: 5, y: 4 }, RT: { x: 55, y: 4 },
+    Back: { x: 40, y: 8, hidden: true }, Xbox: { x: 25, y: 14 }, Start: { x: 55, y: 14 },
+    Up: { x: 20, y: 22, hidden: true }, Down: { x: 20, y: 50, hidden: true },
+    Left: { x: 11, y: 36, hidden: true }, Right: { x: 29, y: 36, hidden: true },
+    Y: { x: 42, y: 20 }, X: { x: 20, y: 30 },
+    B: { x: 64, y: 30 }, A: { x: 42, y: 40 },
+    LeftStick: { x: 12, y: 68, hidden: true }, RightStick: { x: 28, y: 52 },
+    LS: { x: 4, y: 90, hidden: true }, RS: { x: 42, y: 82 },
+  }
+};
