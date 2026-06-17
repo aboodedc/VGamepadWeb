@@ -27,6 +27,7 @@ namespace VGamepadWeb.Core
             builder.Services.AddSingleton<GamepadManager>();
             builder.Services.AddSingleton<MotionServer>(); // سطر الإضافة الخاص بك ممتاز!
             builder.Services.AddSingleton<WebRTCSessionManager>();
+            builder.Services.AddSingleton<CemuHookDSUServer>();
 
             // تفعيل الكشف الديناميكي عن مجلد wwwroot المرفق مع الـ WinForm
             string wwwrootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot");
@@ -67,14 +68,32 @@ namespace VGamepadWeb.Core
             var hubContext = _app.Services.GetRequiredService<IHubContext<GamepadHub>>();
             var rtcManager = _app.Services.GetRequiredService<WebRTCSessionManager>();
             var gamepadManager = _app.Services.GetRequiredService<GamepadManager>();
+            var dsuServer = _app.Services.GetRequiredService<CemuHookDSUServer>();
 
             // 🔥 خطوة أمان أساسية: استدعاء كائن MotionServer صراحة من الحاوية لضمان تفعيل مَشيد الكلاس (Constructor)
             // وبدء خادم الـ UDP بالاستماع فوراً عند إقلاع السيرفر.
             var motionServer = _app.Services.GetRequiredService<MotionServer>();
 
             // ربط الأحداث داخلياً فور بناء الـ App بنجاح
-            gamepadManager.OnControllerIdAssigned += (connId, id) => OnControllerIdAssigned?.Invoke(connId, id);
-            rtcManager.OnPlayerDisconnected += (connId) => OnPlayerDisconnected?.Invoke(connId);
+            gamepadManager.OnControllerIdAssigned += (connId, id) =>
+            {
+                OnControllerIdAssigned?.Invoke(connId, id);
+                dsuServer.UpdateGamepadState(id, 0, 0, 0, 0, 0, 128, 128, 128, 128, 8);
+            };
+            rtcManager.OnPlayerDisconnected += (connId) =>
+            {
+                OnPlayerDisconnected?.Invoke(connId);
+            };
+
+            // ربط بيانات الحركة من اللاعب إلى خادم CemuHook DSU
+            gamepadManager.OnMotionReceivedEvent += (connId, ax, ay, az, gx, gy, gz) =>
+            {
+                int slot = gamepadManager.GetControllerId(connId);
+                if (slot >= 0 && slot < 4)
+                {
+                    dsuServer.UpdateMotion(slot, ax, ay, az, gx, gy, gz);
+                }
+            };
 
             rtcManager.OnAnswerReady += async (connectionId, sdpAnswer) =>
             {

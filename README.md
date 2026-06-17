@@ -64,7 +64,7 @@ This one was just for early development. It was a quick way to run the Core serv
 
 - Windows 10 or later
 - [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [ViGEmBus driver](https://github.com/nefarius/ViGEmBus/releases) installed on the PC
+- [ViGEmBus driver](https://github.com/nefarius/ViGEmBus/releases) installed on the PC (in v2.0.0 or later installed automatically)
 - A phone or browser on the same network (or configured for remote access)
 
 ---

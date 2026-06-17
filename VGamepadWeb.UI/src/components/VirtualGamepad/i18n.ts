@@ -70,6 +70,10 @@ export const translations = {
     arabic: 'العربية',
     english: 'English',
 
+    // Motion Controls
+    enableMotionControls: 'تفعيل التحكم الحركي (الجيروسكوب)',
+    dsuPort: 'منفذ خادم DSU (CemuHook)',
+
     // About
     about: 'ℹ️ حول',
     aboutTitle: 'VGamepad Web',
@@ -148,6 +152,10 @@ export const translations = {
     language: '🌐 Language',
     arabic: 'العربية',
     english: 'English',
+
+    // Motion Controls
+    enableMotionControls: 'Enable Motion Controls (Gyroscope)',
+    dsuPort: 'DSU Server Port (CemuHook)',
 
     // About
     about: 'ℹ️ About',

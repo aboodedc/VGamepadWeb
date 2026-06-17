@@ -48,6 +48,12 @@ namespace VGamepadWeb.Core
         // حدث إعلام السيرفر برقم اليد الذي حصل عليه اللاعب فوراً
         public event Action<string, int> OnControllerIdAssigned;
 
+        // Motion data per controller (ax, ay, az, gx, gy, gz)
+        private readonly ConcurrentDictionary<string, (float, float, float, float, float, float)> _motionData = new();
+        public event Action<string, float, float, float, float, float, float>? OnMotionReceivedEvent;
+        public event Action<string, string, bool>? OnButtonReceivedEvent;
+        public event Action<string, string, short, short>? OnJoystickReceivedEvent;
+
         // قاموس إكس بوكس
         private readonly Dictionary<string, Xbox360Button> _buttonMapXbox = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -142,6 +148,7 @@ namespace VGamepadWeb.Core
 
         public void OnButtonReceive(string connectionId, string buttonName, bool isPressed)
         {
+            OnButtonReceivedEvent?.Invoke(connectionId, buttonName, isPressed);
             if (_controllers.TryGetValue(connectionId, out var settings))
             {
                 if (settings.ControllerType == TypeController.Xbox360)
@@ -181,6 +188,7 @@ namespace VGamepadWeb.Core
 
         public void OnJoystickMove(string connectionId, string stickName, short xValue, short yValue)
         {
+            OnJoystickReceivedEvent?.Invoke(connectionId, stickName, xValue, yValue);
             if (_controllers.TryGetValue(connectionId, out var settings))
             {
                 if (settings.ControllerType == TypeController.Xbox360)
@@ -216,6 +224,28 @@ namespace VGamepadWeb.Core
                         ds4.SetAxisValue(DualShock4Axis.RightThumbY, ps4Y);
                     }
                     ds4.SubmitReport();
+                }
+            }
+        }
+
+        public void OnMotionReceived(string connectionId, float ax, float ay, float az, float gx, float gy, float gz)
+        {
+            _motionData[connectionId] = (ax, ay, az, gx, gy, gz);
+            OnMotionReceivedEvent?.Invoke(connectionId, ax, ay, az, gx, gy, gz);
+
+            if (_controllers.TryGetValue(connectionId, out var settings))
+            {
+                int slot = settings.ControllerIndex;
+                if (slot >= 0 && slot < 4)
+                {
+                    var ds4 = settings.Gamepad as IDualShock4Controller;
+                    if (ds4 != null)
+                    {
+                        // Try to avoid calling extra SubmitReport for every motion frame.
+                        // ViGEmBus DS4 gyro/accel is set via the same SubmitReport mechanism,
+                        // but the v1.21 API doesn't expose direct SetGyroX methods.
+                        // Gyro/accel are forwarded via the CemuHook DSU UDP server instead.
+                    }
                 }
             }
         }

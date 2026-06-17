@@ -6,14 +6,16 @@ namespace VGamepadWeb.Core
     {
         private readonly WebRTCSessionManager _rtcManager;
         private readonly GamepadManager _gamepadManager;
+        private readonly CemuHookDSUServer _dsuServer;
 
         // 🔥 استخدام static لضمان بقاء كلمة المرور ثابتة في الذاكرة عبر جميع الطلبات والمكالمات
         private static string _serverPassword = "";
 
-        public GamepadHub(WebRTCSessionManager rtcManager, GamepadManager gamepadManager)
+        public GamepadHub(WebRTCSessionManager rtcManager, GamepadManager gamepadManager, CemuHookDSUServer dsuServer)
         {
             _rtcManager = rtcManager;
             _gamepadManager = gamepadManager;
+            _dsuServer = dsuServer;
         }
 
         public override Task OnDisconnectedAsync(Exception? exception)

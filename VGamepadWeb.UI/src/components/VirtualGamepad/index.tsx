@@ -54,6 +54,7 @@ const VirtualGamepadInner: React.FC = () => {
   const { connStatus, latency, controllerId, dataChannel, connect, disconnect, sendButton, sendJoystick } = useGamepadConnection({
     serverUrl: actualServerUrl, serverPassword, controllerType, enableVib, sensitivity, enableGyro, motionOrientation
   });
+  const { isSupported, needsPermission, requestPermission, isActive, start, stop, dataRef } = useMotionSensor();
 
   const { requestPermission } = useMotionSensors(dataChannel);
 
@@ -69,6 +70,43 @@ const VirtualGamepadInner: React.FC = () => {
       setVisibilityMenuOpen(false);
     }
   }, [editMode]);
+
+  const rafRef = useRef<number | null>(null);
+
+  // Start/stop motion sensor based on connection + motionEnabled
+  useEffect(() => {
+    if (connStatus === 'on' && motionEnabled) {
+      (async () => {
+        if (needsPermission) {
+          const ok = await requestPermission();
+          if (!ok) return;
+        }
+        start();
+      })();
+    } else {
+      stop();
+    }
+  }, [connStatus, motionEnabled]);
+
+  // RAF loop — send motion at max available rate
+  useEffect(() => {
+    if (connStatus !== 'on' || !motionEnabled || !isActive) return;
+
+    const sendLoop = () => {
+      if (connStatus !== 'on' || !motionEnabled) return;
+      const d = dataRef.current;
+      sendMotion(d.accel.x, d.accel.y, d.accel.z, d.gyro.x, d.gyro.y, d.gyro.z);
+      rafRef.current = requestAnimationFrame(sendLoop);
+    };
+
+    rafRef.current = requestAnimationFrame(sendLoop);
+    return () => {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [connStatus, motionEnabled, isActive, sendMotion]);
 
   // Fullscreen support
   useEffect(() => {
@@ -110,6 +148,8 @@ const VirtualGamepadInner: React.FC = () => {
   useEffect(() => { localStorage.setItem('gamepad_gyro', enableGyro.toString()); }, [enableGyro]);
   useEffect(() => { localStorage.setItem('gamepad_orientation', motionOrientation); }, [motionOrientation]);
   useEffect(() => { localStorage.setItem('gamepad_pass', serverPassword); }, [serverPassword]);
+  useEffect(() => { localStorage.setItem('gamepad_motion', motionEnabled.toString()); }, [motionEnabled]);
+  useEffect(() => { localStorage.setItem('gamepad_dsu_port', dsuPort.toString()); }, [dsuPort]);
 
   // Reconnect automatically when orientation or server URL changes while connected
   const isFirstMountOrConnRef = useRef(true);
