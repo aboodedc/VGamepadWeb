@@ -47,7 +47,7 @@ namespace VGamepadWeb.Core
             // 校验密码：与服务器设置不一致直接踢掉，不进入任何协商
             if (_serverPassword != "" && clientPassword != _serverPassword)
             {
-                Console.WriteLine($"[Auth Warning] Unauthorized connection attempt blocked for: {Context.ConnectionId}");
+                ServerLog.Warn($"密码校验失败，已拒绝连接 {Context.ConnectionId}");
                 await Clients.Caller.SendAsync("AuthFailed", "Invalid server password.");
                 Context.Abort();
                 return;
@@ -61,12 +61,12 @@ namespace VGamepadWeb.Core
                     Context.ConnectionId, slot, clientId, remoteIp, enableVib, sensitivity,
                     out int slotIndex, out string reason))
             {
-                Console.WriteLine($"[Slot] Refused {Context.ConnectionId}: {reason}");
+                ServerLog.Warn($"占位失败：{reason}（连接 {Context.ConnectionId}）");
                 await Clients.Caller.SendAsync("SlotUnavailable", reason);
                 return;
             }
 
-            Console.WriteLine($"[Slot] {Context.ConnectionId} -> slot {slotIndex}");
+            ServerLog.Info($"连接 {Context.ConnectionId} 占用槽位 {slotIndex}");
             await _rtcManager.StartConnectionAsync(Context.ConnectionId, sdpOffer);
         }
 
@@ -94,7 +94,7 @@ namespace VGamepadWeb.Core
         public void UpdateSetting(string settingName, string value)
         {
             _gamepadManager.UpdateSettingLive(Context.ConnectionId, settingName, value);
-            Console.WriteLine($"[Settings] {settingName} -> {value} for Player: {Context.ConnectionId}");
+            ServerLog.Info($"设置更新 {settingName} -> {value}（连接 {Context.ConnectionId}）");
         }
 
         // ==========================================

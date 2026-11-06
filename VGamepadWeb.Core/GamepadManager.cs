@@ -297,7 +297,7 @@ namespace VGamepadWeb.Core
             ResetNeutral(slotIndex);
 
             OnControllerIdAssigned?.Invoke(connectionId, slotIndex);
-            Console.WriteLine($"[Manager] Assigned Controller ID: {slotIndex} to Player: {connectionId}");
+            ServerLog.Info($"分配槽位 {slotIndex} 给连接 {connectionId}");
             RaiseSlotsChanged();
             return true;
         }
@@ -379,7 +379,7 @@ namespace VGamepadWeb.Core
             }
 
             ResetNeutral(slotIndex);
-            Console.WriteLine($"[Manager] Controller ID: ({slotIndex}) is now FREE.");
+            ServerLog.Info($"槽位 {slotIndex} 已释放（连接 {connectionId}）");
             RaiseSlotsChanged();
         }
 

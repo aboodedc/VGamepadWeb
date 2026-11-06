@@ -39,7 +39,7 @@ namespace VGamepadWeb.Core
 
             pc.ondatachannel += (dc) =>
             {
-                Console.WriteLine($"[WebRTC] Data Channel Opened for: {connectionId}");
+                ServerLog.Info($"数据通道已建立（连接 {connectionId}）");
                 _dataChannels.TryAdd(connectionId, dc);
 
                 int controllerId = _gamepadManager.GetControllerId(connectionId);
