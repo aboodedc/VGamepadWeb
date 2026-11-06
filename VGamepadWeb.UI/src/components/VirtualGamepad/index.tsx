@@ -1,23 +1,35 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { GamepadLayout, ThemeType } from './types';
-import { LAYOUT_KEY, URL_KEY, DEFAULT_LAYOUT, THEMES, BTN_IDS, STICK_IDS } from './constants';
+import { LAYOUT_KEY, DEFAULT_LAYOUT, THEMES, BTN_IDS, STICK_IDS } from './constants';
 import { loadLayout, clamp } from './utils';
 import { GpButton } from './GpButton';
 import { GpJoystick } from './GpJoystick';
 import { TopBar } from './TopBar';
-import { SettingsModal } from './SettingsModal';
 import { ConnectionGate } from './ConnectionGate';
 import { EditBar } from './EditBar';
 import { useGamepadConnection } from './hooks/useGamepadConnection';
+import { usePageLockdown } from './hooks/usePageLockdown';
 import { LanguageProvider, useLanguage } from './LanguageContext';
 
 const VirtualGamepadInner: React.FC = () => {
   const { t } = useLanguage();
+
+  // 挡住右键菜单 / 开发者工具 / 复制 / 刷新等会打断手柄操作的浏览器行为。
+  usePageLockdown();
   const [activeProfile, setActiveProfile] = useState<string>(() => localStorage.getItem('gamepad_active_profile') || 'default');
+  // 默认方案的名字跟着语言走。老用户 localStorage 里存的还是旧名（「默认」/「Default」），
+  // 读取时就换掉 —— 不用 effect 改状态，初始化阶段一次搞定。
   const [profiles, setProfiles] = useState<{id: string, name: string}[]>(() => {
-    try { 
+    try {
       const p = localStorage.getItem('gamepad_profiles');
-      if (p) return JSON.parse(p);
+      if (p) {
+        const saved = JSON.parse(p) as {id: string, name: string}[];
+        if (Array.isArray(saved)) {
+          return saved.map(item =>
+            item.id === 'default' ? { ...item, name: t.defaultProfile } : item
+          );
+        }
+      }
     } catch {}
     return [{ id: 'default', name: t.defaultProfile }];
   });
@@ -31,10 +43,8 @@ const VirtualGamepadInner: React.FC = () => {
   
   const [editMode, setEditMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [useSameServer, setUseSameServer] = useState<boolean>(() => localStorage.getItem('gamepad_use_same_server') === 'true' || localStorage.getItem('gamepad_use_same_server') === null);
-  const [serverUrl, setServerUrl] = useState(() => localStorage.getItem(URL_KEY) || `http://${window.location.hostname}:5000`);
   const [serverPassword, setServerPassword] = useState(() => localStorage.getItem('gamepad_pass') || '');
+  // 振动默认开启：只记「显式关掉」的那次，没存过就是开。
   const [enableVib, setEnableVib] = useState<boolean>(() => localStorage.getItem('gamepad_vib') !== 'false');
   const [sensitivity, setSensitivity] = useState<number>(() => parseInt(localStorage.getItem('gamepad_sens') || '100', 10));
   const [activeButtons, setActiveButtons] = useState<Set<string>>(new Set());
@@ -47,10 +57,12 @@ const VirtualGamepadInner: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const actualServerUrl = useSameServer ? window.location.origin : serverUrl;
+  // 服务器地址恒为当前页面的 origin：这个页面本就是那台 PC 提供的，
+  // 再让用户填地址是自己给自己找麻烦。
+  const actualServerUrl = window.location.origin;
   const {
     connStatus, latency, controllerId, notice,
-    connect, disconnect, dismissNotice, sendButton, sendJoystick
+    connect, dismissNotice, sendButton, sendJoystick
   } = useGamepadConnection({
     serverUrl: actualServerUrl, serverPassword, enableVib, sensitivity, t
   });
@@ -95,8 +107,6 @@ const VirtualGamepadInner: React.FC = () => {
   useEffect(() => { localStorage.setItem('gamepad_theme', theme); }, [theme]);
   useEffect(() => { localStorage.setItem('gamepad_active_profile', activeProfile); }, [activeProfile]);
   useEffect(() => { localStorage.setItem('gamepad_profiles', JSON.stringify(profiles)); }, [profiles]);
-  useEffect(() => { localStorage.setItem(URL_KEY, serverUrl); }, [serverUrl]);
-  useEffect(() => { localStorage.setItem('gamepad_use_same_server', useSameServer.toString()); }, [useSameServer]);
   useEffect(() => { localStorage.setItem('gamepad_vib', enableVib.toString()); }, [enableVib]);
   useEffect(() => { localStorage.setItem('gamepad_sens', sensitivity.toString()); }, [sensitivity]);
   useEffect(() => { localStorage.setItem('gamepad_pass', serverPassword); }, [serverPassword]);
@@ -227,29 +237,24 @@ const VirtualGamepadInner: React.FC = () => {
     <div className="gp-root">
       <TopBar
         connStatus={connStatus} latency={latency} controllerId={controllerId} isBarHidden={isBarHidden} setIsBarHidden={setIsBarHidden}
-        isFullscreen={isFullscreen}
+        isFullscreen={isFullscreen} toggleFullscreen={toggleFullscreen}
         editMode={editMode} setEditMode={setEditMode}
         menuOpen={menuOpen} setMenuOpen={setMenuOpen} visibilityMenuOpen={visibilityMenuOpen}
-        setVisibilityMenuOpen={setVisibilityMenuOpen} setSettingsOpen={setSettingsOpen} resetLayout={resetLayout}
+        setVisibilityMenuOpen={setVisibilityMenuOpen} resetLayout={resetLayout}
         exportLayout={exportLayout} fileRef={fileRef} importLayout={importLayout} layout={layout} toggleVisibility={toggleVisibility}
         showHitboxes={showHitboxes} setShowHitboxes={setShowHitboxes}
-      />
-
-      <SettingsModal
-        settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen} activeProfile={activeProfile}
-        profiles={profiles} switchProfile={switchProfile} createNewProfile={createNewProfile} deleteProfile={deleteProfile}
+        activeProfile={activeProfile} profiles={profiles} switchProfile={switchProfile}
+        createNewProfile={createNewProfile} deleteProfile={deleteProfile}
         theme={theme} setTheme={setTheme}
-        enableVib={enableVib} setEnableVib={setEnableVib} sensitivity={sensitivity} setSensitivity={setSensitivity}
-        connStatus={connStatus} disconnect={disconnect}
+        enableVib={enableVib} setEnableVib={setEnableVib}
+        sensitivity={sensitivity} setSensitivity={setSensitivity}
       />
 
-      {/* 未连接时盖住整页：地址 / 密码 / 连接 / 全屏 / 语言都在这里，连上才能用手柄。 */}
+      {/* 未连接时盖住整页：密码 / 连接 / 全屏 / 语言都在这里，连上才能用手柄。 */}
       <ConnectionGate
         connected={connStatus === 'on'}
         connecting={connStatus === 'ing'}
         notice={notice}
-        serverUrl={serverUrl} setServerUrl={setServerUrl}
-        useSameServer={useSameServer} setUseSameServer={setUseSameServer}
         serverPassword={serverPassword} setServerPassword={setServerPassword}
         connect={connect}
         toggleFullscreen={toggleFullscreen}

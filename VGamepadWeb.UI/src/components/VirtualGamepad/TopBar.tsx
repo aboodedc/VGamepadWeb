@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { GamepadLayout } from './types';
+import type { GamepadLayout, ThemeType } from './types';
 import { BTN_IDS, STICK_IDS } from './constants';
 import { useLanguage } from './LanguageContext';
 import { AboutModal } from './AboutModal';
@@ -11,13 +11,13 @@ interface TopBarProps {
   isBarHidden: boolean;
   setIsBarHidden: (hidden: boolean) => void;
   isFullscreen: boolean;
+  toggleFullscreen: () => void;
   editMode: boolean;
   setEditMode: (mode: boolean) => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   visibilityMenuOpen: boolean;
   setVisibilityMenuOpen: (open: boolean) => void;
-  setSettingsOpen: (open: boolean) => void;
   resetLayout: () => void;
   exportLayout: () => void;
   fileRef: React.RefObject<HTMLInputElement | null>;
@@ -26,17 +26,32 @@ interface TopBarProps {
   toggleVisibility: (id: string) => void;
   showHitboxes: boolean;
   setShowHitboxes: (show: boolean) => void;
+  // 从设置弹窗搬出来的手柄参数：直接摊在这一行里，不再有弹窗。
+  activeProfile: string;
+  profiles: { id: string; name: string }[];
+  switchProfile: (id: string) => void;
+  createNewProfile: () => void;
+  deleteProfile: (id: string) => void;
+  theme: ThemeType;
+  setTheme: (theme: ThemeType) => void;
+  enableVib: boolean;
+  setEnableVib: (enable: boolean) => void;
+  sensitivity: number;
+  setSensitivity: (sens: number) => void;
 }
 
 /**
- * 顶栏只负责「状态 + 布局类操作」。
- * 全屏、语言、连接/断开都搬到了连接覆盖层（ConnectionGate），这里不再重复入口。
+ * 顶栏是手柄界面的唯一一行：状态 + 所有可调项。
+ * 配置方案、按键风格、启动振动、全屏都直接摆在这一行上，
+ * 原来的设置弹窗已经拆掉，不再有第二处入口。
  */
 export const TopBar: React.FC<TopBarProps> = ({
-  connStatus, latency, controllerId, isBarHidden, setIsBarHidden, isFullscreen,
+  connStatus, latency, controllerId, isBarHidden, setIsBarHidden, isFullscreen, toggleFullscreen,
   editMode, setEditMode, menuOpen, setMenuOpen, visibilityMenuOpen, setVisibilityMenuOpen,
-  setSettingsOpen, resetLayout, exportLayout, fileRef, importLayout, layout, toggleVisibility,
-  showHitboxes, setShowHitboxes
+  resetLayout, exportLayout, fileRef, importLayout, layout, toggleVisibility,
+  showHitboxes, setShowHitboxes,
+  activeProfile, profiles, switchProfile, createNewProfile, deleteProfile,
+  theme, setTheme, enableVib, setEnableVib, sensitivity, setSensitivity
 }) => {
   const { t } = useLanguage();
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -44,8 +59,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   return (
     <>
       <div className={`gp-bar ${isBarHidden ? 'hidden' : ''}`}>
-        <div className={`gp-dot ${connStatus}`} onClick={() => setSettingsOpen(true)} />
-        <span className="gp-bar-status" onClick={() => setSettingsOpen(true)}>
+        <span className={`gp-dot ${connStatus}`} />
+        <span className="gp-bar-status">
           {connStatus === 'on' ? t.connected : connStatus === 'ing' ? t.connecting : t.disconnected}
         </span>
         {connStatus === 'on' && latency !== null && (
@@ -59,6 +74,51 @@ export const TopBar: React.FC<TopBarProps> = ({
           </span>
         )}
         <div className="gp-spacer" />
+
+        {/* 手柄参数：配置方案 / 按键风格 / 启动振动 / 全屏 —— 全在这一行 */}
+        <select
+          className="gp-bar-select"
+          value={activeProfile}
+          onChange={e => switchProfile(e.target.value)}
+          aria-label={t.profile}
+        >
+          {profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+
+        <select
+          className="gp-bar-select"
+          value={theme}
+          onChange={e => setTheme(e.target.value as ThemeType)}
+          aria-label={t.buttonStyle}
+        >
+          <option value="xbox">{t.xboxDefault}</option>
+          <option value="ps">PlayStation</option>
+          <option value="nintendo">Nintendo Switch</option>
+        </select>
+
+        <button
+          className={`gp-bar-btn gp-bar-toggle ${enableVib ? 'on' : 'off'}`}
+          onClick={() => setEnableVib(!enableVib)}
+          aria-label={t.enableVibration}
+        >
+          {t.enableVibration}
+          <span className="gp-bar-toggle-state">{enableVib ? t.on : t.off}</span>
+        </button>
+
+        <label className="gp-bar-slider" aria-label={`${t.sensitivity} (${sensitivity}%)`}>
+          <span className="gp-bar-slider-label">{t.sensitivity}</span>
+          <input
+            type="range"
+            min="10" max="200"
+            value={sensitivity}
+            onChange={e => setSensitivity(parseInt(e.target.value, 10))}
+          />
+        </label>
+
+        <button className="gp-bar-btn" onClick={toggleFullscreen}>
+          {isFullscreen ? t.minimize : t.fullscreen}
+        </button>
+
         {isFullscreen && (
           <button className="gp-bar-btn" onClick={() => setIsBarHidden(true)}>
             {t.hide}
@@ -90,7 +150,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   return (
                     <button key={id} onClick={() => toggleVisibility(id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{id === 'LeftStick' ? t.leftStick : id === 'RightStick' ? t.rightStick : id}</span>
-                      <span className='promptfont'>{isHidden ? '\u{1F315}' : '\u{1F311}'}</span>
+                      <span className="gp-vis-state">{isHidden ? t.hideControl : t.show}</span>
                     </button>
                   );
                 })}
@@ -100,13 +160,19 @@ export const TopBar: React.FC<TopBarProps> = ({
         )}
 
         <div className="gp-menu-wrap">
-          <button className="gp-bar-btn" onClick={() => { setMenuOpen(!menuOpen); setVisibilityMenuOpen(false); }}>☰</button>
+          <button className="gp-bar-btn" onClick={() => { setMenuOpen(!menuOpen); setVisibilityMenuOpen(false); }}>{t.menu}</button>
           {menuOpen && (
             <div className="gp-dropdown promptfont">
               <button onClick={resetLayout}>{t.reset}</button>
               <button onClick={exportLayout}>{t.export}</button>
               <button onClick={() => { fileRef.current?.click(); }}>{t.import}</button>
-              <button onClick={() => { setSettingsOpen(true); setMenuOpen(false); }}>{t.settings}</button>
+              <button onClick={() => { createNewProfile(); setMenuOpen(false); }}>{t.newProfile}</button>
+              <button
+                onClick={() => { deleteProfile(activeProfile); setMenuOpen(false); }}
+                disabled={profiles.length <= 1}
+              >
+                {t.deleteProfile}
+              </button>
               <button onClick={() => { setAboutOpen(true); setMenuOpen(false); }}>{t.about}</button>
             </div>
           )}
@@ -115,11 +181,11 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {isBarHidden && (
-        <button 
-          className="promptfont gp-show-bar-btn"
+        <button
+          className="gp-show-bar-btn"
           onClick={() => setIsBarHidden(false)}
         >
-          {"\u{1F441}"}
+          {t.showBar}
         </button>
       )}
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />

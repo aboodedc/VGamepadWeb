@@ -277,12 +277,6 @@ export const useGamepadConnection = ({
     }
   };
 
-  const disconnect = async () => {
-    await resetSession();
-    setConnStatus('off');
-    setNotice(null);
-  };
-
   const sendButton = useCallback((btn: string, pressed: boolean) => {
     const dc = dcRef.current;
     if (dc?.readyState === 'open') {
@@ -299,7 +293,7 @@ export const useGamepadConnection = ({
 
   return {
     connStatus, latency, controllerId, slots, notice,
-    connect, disconnect, dismissNotice: () => setNotice(null),
+    connect, dismissNotice: () => setNotice(null),
     sendButton, sendJoystick
   };
 };

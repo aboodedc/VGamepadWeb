@@ -13,10 +13,6 @@ interface ConnectionGateProps {
   connected: boolean;
   connecting: boolean;
   notice: string | null;
-  serverUrl: string;
-  setServerUrl: (url: string) => void;
-  useSameServer: boolean;
-  setUseSameServer: (val: boolean) => void;
   serverPassword: string;
   setServerPassword: (pass: string) => void;
   connect: () => void;
@@ -26,12 +22,14 @@ interface ConnectionGateProps {
 
 /**
  * 未连接时盖住整个页面的「门」。
- * 连接相关的一切（地址、密码、连接按钮、全屏、语言）都收在这里：
+ * 连接相关的一切（密码、连接按钮、全屏、语言）都收在这里：
  * 连上之前用户没法绕过它去操作手柄，连上之后覆盖层消失、顶栏接管。
+ *
+ * 不再提供服务器地址输入：这个页面本身就由那台 PC 的服务器提供，
+ * 还能连到哪去。地址恒为当前页面的 origin。
  */
 export const ConnectionGate: React.FC<ConnectionGateProps> = ({
   connected, connecting, notice,
-  serverUrl, setServerUrl, useSameServer, setUseSameServer,
   serverPassword, setServerPassword, connect, toggleFullscreen, isFullscreen
 }) => {
   const { t, language, setLanguage } = useLanguage();
@@ -45,33 +43,8 @@ export const ConnectionGate: React.FC<ConnectionGateProps> = ({
     <div className="gp-gate">
       <div className="gp-gate-panel">
         <h2 className="gp-gate-title">{t.gateTitle}</h2>
-        <p className="gp-gate-sub">{t.gateSubtitle}</p>
 
         {notice && <div className="gp-gate-notice">{notice}</div>}
-
-        <label className="gp-gate-label">{t.useSameServer}</label>
-        <label className="gp-gate-check">
-          <input
-            type="checkbox"
-            checked={useSameServer}
-            onChange={e => setUseSameServer(e.target.checked)}
-          />
-          {t.useSameServerHint}
-        </label>
-
-        {!useSameServer && (
-          <>
-            <label className="gp-gate-label">{t.customServer}</label>
-            <input
-              className="gp-input"
-              value={serverUrl}
-              onChange={e => setServerUrl(e.target.value)}
-              placeholder="http://192.168.1.x:5000"
-              autoCapitalize="off"
-              autoCorrect="off"
-            />
-          </>
-        )}
 
         <label className="gp-gate-label">{t.password}</label>
         <input
@@ -93,18 +66,19 @@ export const ConnectionGate: React.FC<ConnectionGateProps> = ({
             {isFullscreen ? t.minimize : t.fullscreen}
           </button>
 
-          <div className="gp-gate-langs">
+          {/* 语言用下拉框：语言一多，按钮排不下。 */}
+          <select
+            className="gp-input gp-gate-lang"
+            value={language}
+            onChange={e => setLanguage(e.target.value as Language)}
+            aria-label={t.language}
+          >
             {LANGUAGE_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                className={`gp-gate-small ${language === opt.value ? 'active' : ''}`}
-                onClick={() => setLanguage(opt.value)}
-              >
-                <span>{opt.flag}</span>
-                <span>{languageLabel(opt.value)}</span>
-              </button>
+              <option key={opt.value} value={opt.value}>
+                {opt.flag} {languageLabel(opt.value)}
+              </option>
             ))}
-          </div>
+          </select>
         </div>
       </div>
     </div>

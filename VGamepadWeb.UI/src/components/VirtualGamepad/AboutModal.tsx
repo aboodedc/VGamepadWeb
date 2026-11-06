@@ -36,7 +36,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
             href={`mailto:${t.aboutEmail}`}
             onClick={e => e.stopPropagation()}
           >
-            ✉️ {t.aboutEmail}
+            {t.aboutEmail}
           </a>
         </div>
 
@@ -66,7 +66,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
         </div>
 
         {/* MIT license */}
-        <p className="gp-about-mit">⚖️ {t.aboutMIT}</p>
+        <p className="gp-about-mit">{t.aboutMIT}</p>
 
         {/* Close */}
         <button className="gp-about-close" onClick={onClose}>✕</button>

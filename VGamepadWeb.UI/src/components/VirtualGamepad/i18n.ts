@@ -7,39 +7,42 @@ const ar = {
     disconnected: 'غير متصل',
 
     // TopBar buttons
-    hide: '👁️ إخفاء',
-    minimize: '🗗 تصغير',
-    fullscreen: '🗖 كاملة',
-    done: '✓ تم',
-    edit: '✏️ تعديل',
-    touchArea: '🔲 منطقة اللمس',
-    buttons: '👁️ الأزرار',
+    hide: 'إخفاء',
+    minimize: 'نافذة',
+    fullscreen: 'شاشة كاملة',
+    done: 'تم',
+    edit: 'تعديل',
+    touchArea: 'منطقة اللمس',
+    buttons: 'الأزرار',
     leftStick: 'عصا اليسار',
     rightStick: 'عصا اليمين',
 
     // Menu
-    reset: '🔄 إعادة ضبط',
-    export: '📤 تصدير',
-    import: '📥 استيراد',
-    connection: '⚙️ اتصال',
+    reset: 'إعادة ضبط',
+    export: 'تصدير',
+    import: 'استيراد',
+    connection: 'اتصال',
+    menu: 'القائمة',
+    showBar: 'إظهار الشريط',
 
     // Settings Modal
-    settings: 'الإعدادات',
     profile: 'البروفايل (تخصيص الأزرار)',
     buttonStyle: 'شكل الأزرار (التصميم)',
     xboxDefault: 'Xbox (الافتراضي)',
     enableVibration: 'تفعيل الاهتزاز',
+    on: 'مفعّل',
+    off: 'معطّل',
+    show: 'إظهار',
+    hideControl: 'إخفاء',
     sensitivity: 'حساسية الأزرار/العصا',
-    useSameServer: 'استخدام الخادم من نفس رابط الموقع',
-    customServer: 'عنوان السيرفر المخصص',
     password: 'كلمة المرور (اختياري)',
     passwordPlaceholder: 'اتركها فارغة إذا لم يكن هناك باسورد',
-    disconnect: 'قطع الاتصال',
     connect: 'اتصال',
-    close: 'إغلاق',
 
     // Profile prompts/alerts
-    defaultProfile: 'الافتراضي',
+    defaultProfile: 'التخطيط الافتراضي',
+    newProfile: 'بروفايل جديد',
+    deleteProfile: 'حذف البروفايل',
     newProfilePrompt: 'أدخل اسم البروفايل الجديد:',
     cannotDeleteOnly: 'لا يمكن حذف البروفايل الوحيد',
     confirmDeleteProfile: 'هل أنت متأكد من حذف هذا البروفايل؟',
@@ -48,8 +51,6 @@ const ar = {
 
     // Connection gate (未连接时的全屏覆盖层)
     gateTitle: 'الاتصال بالجهاز',
-    gateSubtitle: 'وصّل الهاتف بالجهاز قبل استخدام عصا التحكم',
-    useSameServerHint: 'استخدام عنوان الموقع نفسه',
 
     // Stable reason codes from the server
     reasonSlotLocked: 'هذا المقعد مقفل، اختر مقعداً آخر',
@@ -70,8 +71,8 @@ const ar = {
     rectangle: '■ مستطيل',
     position: 'الموقع',
     align: 'محاذاة',
-    resetButton: '🔄 إعادة تعيين الزر',
-    closePanel: '✕ إغلاق',
+    resetButton: 'إعادة تعيين الزر',
+    closePanel: 'إغلاق',
     editHint: 'اختر أي زر بالضغط عليه لتغيير حجمه وشكله ومكانه بدقة',
 
     // Language menu
@@ -81,14 +82,14 @@ const ar = {
     chinese: '中文',
 
     // About
-    about: 'ℹ️ حول',
+    about: 'حول',
     aboutTitle: 'VGamepad Web',
     aboutTagline: 'يد تحكم افتراضية للكمبيوتر',
     aboutMadeWith: 'صُنع بكل ❤️ من',
     aboutEmail: 'alhatab.edc@gmail.com',
     aboutName: 'Abdullrahman Alhatab',
-    aboutGithubStar: '⭐ أعجبك؟ أضف نجمة على GitHub',
-    aboutLinkedIn: '💼 LinkedIn',
+    aboutGithubStar: 'أعجبك؟ أضف نجمة على GitHub',
+    aboutLinkedIn: 'LinkedIn',
     aboutMIT: 'محمي برخصة MIT المفتوحة',
 };
 
@@ -99,39 +100,42 @@ const en = {
     disconnected: 'Disconnected',
 
     // TopBar buttons
-    hide: '👁️ Hide',
-    minimize: '🗗 Exit',
-    fullscreen: '🗖 Fullscreen',
-    done: '✓ Done',
-    edit: '✏️ Edit',
-    touchArea: '🔲 Hitboxes',
-    buttons: '👁️ Buttons',
+    hide: 'Hide',
+    minimize: 'Window',
+    fullscreen: 'Fullscreen',
+    done: 'Done',
+    edit: 'Edit',
+    touchArea: 'Hitboxes',
+    buttons: 'Buttons',
     leftStick: 'Left Stick',
     rightStick: 'Right Stick',
 
     // Menu
-    reset: '\u{1F501} Reset',
-    export: '📤 Export',
-    import: '📥 Import',
-    connection: '⚙️ Connection',
+    reset: 'Reset',
+    export: 'Export',
+    import: 'Import',
+    connection: 'Connection',
+    menu: 'Menu',
+    showBar: 'Show Bar',
 
     // Settings Modal
-    settings: 'Settings',
     profile: 'Profile (Button Layout)',
     buttonStyle: 'Button Style (Theme)',
     xboxDefault: 'Xbox (Default)',
     enableVibration: 'Enable Vibration',
+    on: 'On',
+    off: 'Off',
+    show: 'Show',
+    hideControl: 'Hide',
     sensitivity: 'Button / Stick Sensitivity',
-    useSameServer: 'Use same server as website URL',
-    customServer: 'Custom Server URL',
     password: 'Password (optional)',
     passwordPlaceholder: 'Leave empty if no password',
-    disconnect: 'Disconnect',
     connect: 'Connect',
-    close: 'Close',
 
     // Profile prompts/alerts
-    defaultProfile: 'Default',
+    defaultProfile: 'Default Layout',
+    newProfile: 'New Profile',
+    deleteProfile: 'Delete Profile',
     newProfilePrompt: 'Enter new profile name:',
     cannotDeleteOnly: 'Cannot delete the only profile',
     confirmDeleteProfile: 'Are you sure you want to delete this profile?',
@@ -140,8 +144,6 @@ const en = {
 
     // Connection gate (未连接时的全屏覆盖层)
     gateTitle: 'Connect to device',
-    gateSubtitle: 'Connect your phone to the PC before using the controller',
-    useSameServerHint: 'Use the address of this page',
 
     // Stable reason codes from the server
     reasonSlotLocked: 'This slot is locked, pick another one',
@@ -162,8 +164,8 @@ const en = {
     rectangle: '■ Rectangle',
     position: 'Position',
     align: 'Align',
-    resetButton: '🔄 Reset Button',
-    closePanel: '✕ Close',
+    resetButton: 'Reset Button',
+    closePanel: 'Close',
     editHint: 'Tap any button to adjust its size, shape, and position precisely',
 
     // Language menu
@@ -173,14 +175,14 @@ const en = {
     chinese: '中文',
 
     // About
-    about: 'ℹ️ About',
+    about: 'About',
     aboutTitle: 'VGamepad Web',
     aboutTagline: 'Virtual Gamepad for PC',
     aboutMadeWith: 'Made with ❤️ by',
     aboutEmail: 'alhatab.edc@gmail.com',
     aboutName: 'Abdullrahman Alhatab',
-    aboutGithubStar: '⭐ Like it? Star on GitHub',
-    aboutLinkedIn: '💼 LinkedIn',
+    aboutGithubStar: 'Like it? Star on GitHub',
+    aboutLinkedIn: 'LinkedIn',
     aboutMIT: 'Licensed under MIT Open Source',
 } as const;
 
@@ -194,39 +196,42 @@ const zh = {
   disconnected: '未连接',
 
   // TopBar buttons
-  hide: '👁️ 隐藏',
-  minimize: '🗗 窗口',
-  fullscreen: '🗖 全屏',
-  done: '✓ 完成',
-  edit: '✏️ 编辑',
-  touchArea: '🔲 触摸区',
-  buttons: '👁️ 按键',
+  hide: '隐藏',
+  minimize: '窗口',
+  fullscreen: '全屏',
+  done: '完成',
+  edit: '编辑',
+  touchArea: '触摸区',
+  buttons: '按键',
   leftStick: '左摇杆',
   rightStick: '右摇杆',
 
   // Menu
-  reset: '🔄 重置',
-  export: '📤 导出',
-  import: '📥 导入',
-  connection: '⚙️ 连接',
+  reset: '重置',
+  export: '导出',
+  import: '导入',
+  connection: '连接',
+  menu: '菜单',
+  showBar: '显示顶栏',
 
   // Settings Modal
-  settings: '设置',
   profile: '配置方案（按键布局）',
   buttonStyle: '按键风格（主题）',
   xboxDefault: 'Xbox（默认）',
-  enableVibration: '启用振动',
+  enableVibration: '启动振动',
+  on: '开',
+  off: '关',
+  show: '显示',
+  hideControl: '隐藏',
   sensitivity: '按键 / 摇杆灵敏度',
-  useSameServer: '使用与网页相同的服务器地址',
-  customServer: '自定义服务器地址',
   password: '密码（可选）',
   passwordPlaceholder: '没有密码就留空',
-  disconnect: '断开连接',
   connect: '连接',
-  close: '关闭',
 
   // Profile prompts/alerts
-  defaultProfile: '默认',
+  defaultProfile: '默认方案',
+  newProfile: '新建方案',
+  deleteProfile: '删除方案',
   newProfilePrompt: '输入新配置方案的名称：',
   cannotDeleteOnly: '不能删除唯一的配置方案',
   confirmDeleteProfile: '确定要删除这个配置方案吗？',
@@ -235,8 +240,6 @@ const zh = {
 
   // Connection gate (未连接时的全屏覆盖层)
   gateTitle: '连接设备',
-  gateSubtitle: '连接手机与电脑后才能使用手柄',
-  useSameServerHint: '使用当前网页的地址',
 
   // Stable reason codes from the server
   reasonSlotLocked: '该槽位已被锁定，请选其他槽位',
@@ -257,8 +260,8 @@ const zh = {
   rectangle: '■ 方形',
   position: '位置',
   align: '对齐',
-  resetButton: '🔄 重置按键',
-  closePanel: '✕ 关闭',
+  resetButton: '重置按键',
+  closePanel: '关闭',
   editHint: '点选任意按键，可精确调整它的大小、形状和位置',
 
   // Language menu
@@ -268,14 +271,14 @@ const zh = {
   chinese: '中文',
 
   // About
-  about: 'ℹ️ 关于',
+  about: '关于',
   aboutTitle: 'VGamepad Web',
   aboutTagline: 'PC 虚拟手柄',
   aboutMadeWith: '用心制作 ❤️',
   aboutEmail: 'alhatab.edc@gmail.com',
   aboutName: 'Abdullrahman Alhatab',
-  aboutGithubStar: '⭐ 觉得好用？去 GitHub 点个星',
-  aboutLinkedIn: '💼 LinkedIn',
+  aboutGithubStar: '觉得好用？去 GitHub 点个星',
+  aboutLinkedIn: 'LinkedIn',
   aboutMIT: '基于 MIT 开源协议',
 } satisfies Record<keyof Translations, string>;
 

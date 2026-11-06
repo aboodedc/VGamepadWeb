@@ -1,7 +1,6 @@
 import type { ThemeType, BtnCfg, GamepadLayout } from './types';
 
 export const LAYOUT_KEY = 'gamepad_layout_v2';
-export const URL_KEY = 'gamepad_server_url';
 
 export const THEMES: Record<ThemeType, Record<string, BtnCfg>> = {
   xbox: {

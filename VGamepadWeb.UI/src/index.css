@@ -37,7 +37,29 @@ html, body {
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  /* 移动端长按不再弹出系统选择菜单 / 复制气泡 */
+  -webkit-touch-callout: none;
   touch-action: none;
+}
+
+/* 输入框例外：密码要能选中、能编辑，禁用只针对「复制出去」。 */
+input, textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* 长按拖拽时 Safari 会生成半透明的「幽灵影像」，禁掉。 */
+img, svg, canvas, video {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+/* 长按任何控件都不该冒出系统菜单 / 选词气泡 / 原生 tooltip。 */
+button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #root {
@@ -140,6 +162,74 @@ html, body {
   background: var(--green);
   color: #000;
   border-color: var(--green);
+}
+.gp-bar-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* 开关按钮：右侧明确标出「开 / 关」，不让玩家猜颜色代表什么。 */
+.gp-bar-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.gp-bar-toggle-state {
+  font-size: 10px; font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  line-height: 1.5;
+}
+.gp-bar-toggle.on {
+  border-color: var(--green);
+  color: var(--green);
+}
+.gp-bar-toggle.on .gp-bar-toggle-state {
+  background: var(--green);
+  color: #000;
+}
+.gp-bar-toggle.off {
+  color: var(--text-dim);
+}
+.gp-bar-toggle.off .gp-bar-toggle-state {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-dim);
+}
+
+/* 按键显隐列表右侧的状态文字 */
+.gp-vis-state {
+  font-size: 11px; font-weight: 600;
+  color: var(--text-dim);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* 顶栏里的紧凑下拉框（配置方案 / 按键风格） */
+.gp-bar-select {
+  background: #0a0a0f;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  max-width: 130px;
+  transition: border-color 0.15s;
+}
+.gp-bar-select:focus { border-color: var(--green); }
+
+/* 顶栏里的灵敏度滑杆 */
+.gp-bar-slider {
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer;
+}
+.gp-bar-slider-label {
+  font-size: 11px; font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.gp-bar-slider input[type="range"] {
+  width: 80px;
+  accent-color: var(--green);
+  cursor: pointer;
 }
 
 /* ═══════ Menu Dropdown ═══════ */
@@ -1002,15 +1092,7 @@ html, body {
 .gp-gate-title {
   font-size: 20px; font-weight: 800;
   text-align: center;
-  margin-bottom: 6px;
-}
-
-.gp-gate-sub {
-  font-size: 13px;
-  color: var(--text-dim);
-  text-align: center;
   margin-bottom: 20px;
-  line-height: 1.5;
 }
 
 .gp-gate-notice {
@@ -1041,6 +1123,18 @@ html, body {
 }
 
 .gp-gate-panel .gp-input { margin-bottom: 16px; }
+
+/* 语言下拉框：语言一多，按钮排不下。 */
+.gp-gate-lang {
+  width: auto;
+  min-width: 130px;
+  margin-bottom: 0 !important;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
 
 .gp-gate-connect {
   width: 100%;
