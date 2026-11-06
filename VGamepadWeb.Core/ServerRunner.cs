@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -72,6 +72,9 @@ namespace VGamepadWeb.Core
             gamepadManager.OnControllerIdAssigned += (connId, id) => OnControllerIdAssigned?.Invoke(connId, id);
             rtcManager.OnPlayerDisconnected += (connId) => OnPlayerDisconnected?.Invoke(connId);
 
+            // 槽位任何变化（占用 / 释放 / 锁定 / 改名 / 改类型）都广播给所有手机端，选槽界面靠这个刷新。
+            gamepadManager.OnSlotsChanged += () => BroadcastSlots(hubContext, gamepadManager.GetSlotInfos());
+
             rtcManager.OnAnswerReady += async (connectionId, sdpAnswer) =>
             {
                 await hubContext.Clients.Client(connectionId).SendAsync("ReceiveAnswer", sdpAnswer);
@@ -88,6 +91,63 @@ namespace VGamepadWeb.Core
         public void UpdateServerPassword(string newPassword)
         {
             GamepadHub.SetPassword(newPassword);
+        }
+
+        /// <summary>启动时把桌面端落盘的槽位配置（类型 / 名称 / 锁定）灌进管理器。</summary>
+        public void ApplySlotConfig(IReadOnlyList<SlotConfig> configs)
+        {
+            GamepadManager?.ApplySlotConfig(configs);
+        }
+
+        /// <summary>
+        /// 踢出：先把手稳定码发给手机端，再断开 WebRTC 并释放槽位。
+        /// SignalR 连接不动，客户端收到 Kicked 自己收尾（否则它只会看到「掉线」）。
+        /// </summary>
+        public bool Kick(string connectionId, string reason)
+        {
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                return false;
+            }
+
+            WebRTCSessionManager? rtc = WebRTCSessionManager;
+            if (rtc == null)
+            {
+                return false;
+            }
+
+            IHubContext<GamepadHub>? hubContext = _app?.Services.GetService<IHubContext<GamepadHub>>();
+            if (hubContext != null)
+            {
+                SendKicked(hubContext, connectionId, reason);
+            }
+
+            rtc.EndConnection(connectionId);
+            return true;
+        }
+
+        private static async void SendKicked(IHubContext<GamepadHub> hubContext, string connectionId, string reason)
+        {
+            try
+            {
+                await hubContext.Clients.Client(connectionId).SendAsync("Kicked", reason);
+            }
+            catch
+            {
+                // 客户端已经走了：断开本身仍然有效。
+            }
+        }
+
+        private static async void BroadcastSlots(IHubContext<GamepadHub> hubContext, IReadOnlyList<SlotInfo> slots)
+        {
+            try
+            {
+                await hubContext.Clients.All.SendAsync("SlotChanged", slots);
+            }
+            catch
+            {
+                // 广播失败不影响槽位状态本身。
+            }
         }
 
         public async Task StopServerAsync()

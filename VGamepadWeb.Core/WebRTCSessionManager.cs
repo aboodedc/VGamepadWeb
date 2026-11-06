@@ -1,4 +1,4 @@
-﻿using SIPSorcery.Net;
+using SIPSorcery.Net;
 using System.Collections.Concurrent;
 using System.Text;
 
@@ -29,7 +29,10 @@ namespace VGamepadWeb.Core
             }
         }
 
-        public async Task StartConnectionAsync(string connectionId, string sdpOffer, TypeController type, bool enableVib, int sensitivity, string? identity = null)
+        /// <summary>
+        /// 只做协商。槽位已在 GamepadHub 里占好，这里不再建手柄、不再决定类型。
+        /// </summary>
+        public async Task StartConnectionAsync(string connectionId, string sdpOffer)
         {
             var pc = new RTCPeerConnection();
             _peerConnections.TryAdd(connectionId, pc);
@@ -59,7 +62,6 @@ namespace VGamepadWeb.Core
             await pc.setLocalDescription(answer);
 
             OnAnswerReady?.Invoke(connectionId, answer.sdp);
-            _gamepadManager.ConnectNewGamepad(connectionId, type, enableVib, sensitivity, identity);
         }
 
         public void AddIceCandidate(string connectionId, string iceCandidateJson)
