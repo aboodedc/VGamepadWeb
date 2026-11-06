@@ -12,7 +12,6 @@ namespace VGamepadWeb.WinForm
         private const int SlotCount = AppSettings.SlotCount;
 
         // toast 等级由界面层决定观感，这里只传稳定键。
-        private const string ToastInfo = "info";
         private const string ToastSuccess = "success";
         private const string ToastWarn = "warn";
         private const string ToastError = "error";
@@ -172,7 +171,6 @@ namespace VGamepadWeb.WinForm
                 StartedAt = running ? _startedAt : null,
                 Port = _settings.Port,
                 Password = _settings.Password,
-                Address = running && ipv4.Length > 0 ? $"{ipv4}:{_settings.Port}" : string.Empty,
                 Ipv4 = ipv4,
                 Language = _settings.Language,
                 Version = Application.ProductVersion.Split('+')[0],
@@ -563,25 +561,6 @@ namespace VGamepadWeb.WinForm
             }
 
             RefreshUi();
-        }
-
-        private GamepadSnapshot FindSnapshot(int index)
-        {
-            GamepadManager gamepadManager = _server.GamepadManager;
-            if (gamepadManager == null)
-            {
-                return null;
-            }
-
-            foreach (GamepadSnapshot item in gamepadManager.GetSnapshot())
-            {
-                if (item.Slot == index)
-                {
-                    return item;
-                }
-            }
-
-            return null;
         }
 
         // ==========================================

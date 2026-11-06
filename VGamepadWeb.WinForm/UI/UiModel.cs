@@ -54,8 +54,6 @@ namespace VGamepadWeb.WinForm.UI
         public int Port { get; set; } = 5000;
         public string Password { get; set; } = string.Empty;
 
-        /// <summary>运行态才有值：ip:port。停止态给空串。</summary>
-        public string Address { get; set; } = string.Empty;
         public string Ipv4 { get; set; } = string.Empty;
 
         public string Language { get; set; } = "zh";

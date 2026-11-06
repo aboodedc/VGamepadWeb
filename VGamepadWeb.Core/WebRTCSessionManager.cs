@@ -10,9 +10,9 @@ namespace VGamepadWeb.Core
         private readonly ConcurrentDictionary<string, RTCPeerConnection> _peerConnections = new();
         private readonly ConcurrentDictionary<string, RTCDataChannel> _dataChannels = new();
 
-        public event Action<string, string> OnIceCandidateReady;
-        public event Action<string, string> OnAnswerReady;
-        public event Action<string> OnPlayerDisconnected; // حدث الـ WinForm
+        public event Action<string, string>? OnIceCandidateReady;
+        public event Action<string, string>? OnAnswerReady;
+        public event Action<string>? OnPlayerDisconnected; // حدث الـ WinForm
 
         public WebRTCSessionManager(GamepadManager gamepadManager)
         {

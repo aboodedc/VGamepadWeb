@@ -864,7 +864,6 @@ namespace VGamepadWeb.WinForm.UI
             Frame f = new Frame();
             float s = FitScale();
             f.Scale = s;
-            f.Client = new RectangleF(0f, 0f, ClientSize.Width, ClientSize.Height);
 
             // 等比缩放后整页居中：窗口比例与设计比例不一致时均匀留白，绝不把控件横向拉稀。
             f.OffsetX = Snap(Math.Max(0f, (ClientSize.Width - BaseWidth * s) / 2f));
@@ -2489,8 +2488,6 @@ namespace VGamepadWeb.WinForm.UI
             /// <summary>等比缩放后的居中偏移：布局用设计坐标，绘制前统一换算。</summary>
             public float OffsetX;
             public float OffsetY;
-
-            public RectangleF Client;
 
             // 第一行：服务面板（地址 / 端口密码 / 启停）
             public RectangleF ServicePanel;

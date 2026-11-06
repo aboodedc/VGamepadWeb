@@ -74,13 +74,13 @@ namespace VGamepadWeb.Core
             public string? ClientId;
         }
 
-        public event Action<string, byte, byte> OnVibrationReceived;
+        public event Action<string, byte, byte>? OnVibrationReceived;
 
         /// <summary>槽位占用 / 释放 / 设备类型变化后触发，宿主据此广播 SlotChanged。在锁外触发。</summary>
         public event Action? OnSlotsChanged;
 
         // حدث إعلام السيرفر برقم اليد الذي حصل عليه اللاعب فوراً
-        public event Action<string, int> OnControllerIdAssigned;
+        public event Action<string, int>? OnControllerIdAssigned;
 
         // قاموس إكس بوكس
         private readonly Dictionary<string, Xbox360Button> _buttonMapXbox = new(StringComparer.OrdinalIgnoreCase)

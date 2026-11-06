@@ -4,9 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <!-- 两条既有告警与本轮无关：CS8618 是事件字段未初始化，CS0618 是 ViGEm 的
-         FeedbackReceived 已被上游标成过时（行为不能动）。保留代码原样，只压掉噪声。 -->
-    <NoWarn>$(NoWarn);CS8618;CS0618</NoWarn>
+    <!-- ViGEm 的 FeedbackReceived 已被上游标成过时，行为不能动，只压掉这一条。 -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
 
 	  <OutputType>Library</OutputType>
   </PropertyGroup>

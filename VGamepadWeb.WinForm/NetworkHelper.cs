@@ -53,22 +53,6 @@ namespace VGamepadWeb.WinForm
             return addresses;
         }
 
-        /// <summary>
-        /// 2. جلب عنوان الـ IPv4 المرجح والأكثر ملاءمة فقط (الـ Wi-Fi أولاً، ثم بقية الكروت، أو 127.0.0.1 كاحتياطي)
-        /// </summary>
-        public static string GetPreferredLocalIPv4Address()
-        {
-            List<LocalAddress> allIps = GetAllLocalIPv4Addresses();
-
-            if (allIps.Count > 0)
-            {
-                return allIps[0].Ip; // إرجاع العنصر الأول (وهو الـ Wi-Fi المرجح بفضل الترتيب)
-            }
-
-            // خيار احتياطي آمن في حال عدم وجود أي اتصال شبكة فعال في الجهاز
-            return "127.0.0.1";
-        }
-
         private static (string kind, string label) MapInterfaceKind(NetworkInterfaceType interfaceType) => interfaceType switch
         {
             NetworkInterfaceType.Wireless80211 => ("wifi", "Wi-Fi"),
