@@ -27,11 +27,9 @@ const ar = {
 
     // Settings Modal
     profile: 'البروفايل (تخصيص الأزرار)',
-    buttonStyle: 'شكل الأزرار (التصميم)',
-    xboxDefault: 'Xbox (الافتراضي)',
     controllerType: 'نوع ذراع التحكم',
     typeXbox360: 'Xbox 360',
-    typeDualShock4: 'DualShock 4 (PS4)',
+    typeDualShock4: 'DualShock 4',
     enableVibration: 'تفعيل الاهتزاز',
     on: 'مفعّل',
     off: 'معطّل',
@@ -43,7 +41,7 @@ const ar = {
     connect: 'اتصال',
 
     // Profile prompts/alerts
-    defaultProfile: 'التخطيط الافتراضي',
+    defaultProfile: 'ملف التخطيط الافتراضي',
     newProfile: 'بروفايل جديد',
     deleteProfile: 'حذف البروفايل',
     newProfilePrompt: 'أدخل اسم البروفايل الجديد:',
@@ -123,11 +121,9 @@ const en = {
 
     // Settings Modal
     profile: 'Profile (Button Layout)',
-    buttonStyle: 'Button Style (Theme)',
-    xboxDefault: 'Xbox (Default)',
     controllerType: 'Controller type',
     typeXbox360: 'Xbox 360',
-    typeDualShock4: 'DualShock 4 (PS4)',
+    typeDualShock4: 'DualShock 4',
     enableVibration: 'Enable Vibration',
     on: 'On',
     off: 'Off',
@@ -139,7 +135,7 @@ const en = {
     connect: 'Connect',
 
     // Profile prompts/alerts
-    defaultProfile: 'Default Layout',
+    defaultProfile: 'Default Layout Profile',
     newProfile: 'New Profile',
     deleteProfile: 'Delete Profile',
     newProfilePrompt: 'Enter new profile name:',
@@ -222,11 +218,9 @@ const zh = {
 
   // Settings Modal
   profile: '配置方案（按键布局）',
-  buttonStyle: '按键风格（主题）',
-  xboxDefault: 'Xbox（默认）',
   controllerType: '手柄类型',
   typeXbox360: 'Xbox 360',
-  typeDualShock4: 'DualShock 4（PS4）',
+  typeDualShock4: 'DualShock 4',
   enableVibration: '启动振动',
   on: '开',
   off: '关',
@@ -238,7 +232,7 @@ const zh = {
   connect: '连接',
 
   // Profile prompts/alerts
-  defaultProfile: '默认方案',
+  defaultProfile: '默认布局方案',
   newProfile: '新建方案',
   deleteProfile: '删除方案',
   newProfilePrompt: '输入新配置方案的名称：',

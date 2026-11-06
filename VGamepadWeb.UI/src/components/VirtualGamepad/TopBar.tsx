@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { GamepadLayout, ThemeType } from './types';
+import type { GamepadLayout } from './types';
 import { BTN_IDS, STICK_IDS } from './constants';
 import { useLanguage } from './LanguageContext';
 import { AboutModal } from './AboutModal';
@@ -32,8 +32,6 @@ interface TopBarProps {
   switchProfile: (id: string) => void;
   createNewProfile: () => void;
   deleteProfile: (id: string) => void;
-  theme: ThemeType;
-  setTheme: (theme: ThemeType) => void;
   enableVib: boolean;
   setEnableVib: (enable: boolean) => void;
   sensitivity: number;
@@ -51,7 +49,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   resetLayout, exportLayout, fileRef, importLayout, layout, toggleVisibility,
   showHitboxes, setShowHitboxes,
   activeProfile, profiles, switchProfile, createNewProfile, deleteProfile,
-  theme, setTheme, enableVib, setEnableVib, sensitivity, setSensitivity
+  enableVib, setEnableVib, sensitivity, setSensitivity
 }) => {
   const { t } = useLanguage();
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -86,17 +84,6 @@ export const TopBar: React.FC<TopBarProps> = ({
           {profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
 
-        <select
-          className="gp-bar-select"
-          value={theme}
-          onChange={e => setTheme(e.target.value as ThemeType)}
-          aria-label={t.buttonStyle}
-        >
-          <option value="xbox">{t.xboxDefault}</option>
-          <option value="ps">PlayStation</option>
-          <option value="nintendo">Nintendo Switch</option>
-        </select>
-
         <button
           className={`gp-bar-btn gp-bar-toggle ${enableVib ? 'on' : 'off'}`}
           onClick={() => setEnableVib(!enableVib)}
@@ -114,6 +101,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             value={sensitivity}
             onChange={e => setSensitivity(parseInt(e.target.value, 10))}
           />
+          <span className="gp-bar-slider-value">{sensitivity}%</span>
         </label>
 
         <button className="gp-bar-btn" onClick={toggleFullscreen}>

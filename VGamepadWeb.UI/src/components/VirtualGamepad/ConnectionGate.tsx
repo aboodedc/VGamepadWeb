@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLanguage } from './LanguageContext';
 import type { Language } from './i18n';
+import type { ThemeType } from './types';
 
 const LANGUAGE_OPTIONS: { value: Language; flag: string }[] = [
   { value: 'ar', flag: '🇸🇦' },
@@ -15,9 +16,9 @@ interface ConnectionGateProps {
   notice: string | null;
   serverPassword: string;
   setServerPassword: (pass: string) => void;
-  /** 服务端按它建虚拟手柄：0 = Xbox 360，1 = DualShock 4。 */
-  controllerType: number;
-  setControllerType: (type: number) => void;
+  /** 手柄类型 = 服务端创建的设备 + 按键外观。0 = Xbox 360 设备，1 = DualShock 4 设备。 */
+  theme: ThemeType;
+  setTheme: (theme: ThemeType) => void;
   connect: () => void;
   toggleFullscreen: () => void;
   isFullscreen: boolean;
@@ -33,7 +34,8 @@ interface ConnectionGateProps {
  */
 export const ConnectionGate: React.FC<ConnectionGateProps> = ({
   connected, connecting, notice,
-  serverPassword, setServerPassword, controllerType, setControllerType,
+  serverPassword, setServerPassword,
+  theme, setTheme,
   connect, toggleFullscreen, isFullscreen
 }) => {
   const { t, language, setLanguage } = useLanguage();
@@ -64,18 +66,20 @@ export const ConnectionGate: React.FC<ConnectionGateProps> = ({
           autoCorrect="off"
         />
 
-        {/* 手柄类型：决定服务端建哪种虚拟设备。连上之后覆盖层消失，就没有改的入口了，
-            换类型要断开重连 —— 服务端会在原来的槽位上拆掉旧设备再建新的。 */}
+        {/* 手柄类型本身就是「设备 + 按键外观」的组合：括号里写清楚按键画的是谁。
+            服务端只认 Xbox 360 / DualShock 4 两种设备，Nintendo Switch 只是 Xbox 360 上的按键画法。
+            连上后覆盖层消失，就没有改的入口了。 */}
         <label className="gp-gate-label" htmlFor="gp-gate-type">{t.controllerType}</label>
         <select
           id="gp-gate-type"
           className="gp-gate-type"
-          value={controllerType}
-          onChange={e => setControllerType(parseInt(e.target.value, 10))}
+          value={theme}
+          onChange={e => setTheme(e.target.value as ThemeType)}
           disabled={connecting}
         >
-          <option value={0}>{t.typeXbox360}</option>
-          <option value={1}>{t.typeDualShock4}</option>
+          <option value="xbox">{t.typeXbox360}（Xbox）</option>
+          <option value="nintendo">{t.typeXbox360}（Nintendo Switch）</option>
+          <option value="ps">{t.typeDualShock4}（PlayStation）</option>
         </select>
 
         <button className="gp-mbtn green gp-gate-connect" onClick={connect} disabled={connecting}>

@@ -74,6 +74,8 @@ button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
   width: 100%; height: 100dvh;
   overflow: hidden;
   background: var(--bg);
+  /* 顶栏隐藏后会脱离布局流（见 .gp-bar.hidden），这里给它一个确定的定位父级。 */
+  position: relative;
 }
 
 /* ═══════ Top Bar ═══════ */
@@ -93,6 +95,8 @@ button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
 }
 
 .gp-bar.hidden {
+  /* 只平移不影响布局：画布会一直留着那条空档。隐藏时退出布局流，手柄区向上补位。 */
+  position: absolute; top: 0; left: 0; right: 0;
   transform: translateY(-100%);
   opacity: 0;
   pointer-events: none;
@@ -226,6 +230,14 @@ button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
 .gp-bar-slider-label {
   font-size: 11px; font-weight: 600;
   color: var(--text-dim);
+  white-space: nowrap;
+}
+/* 滑杆右侧的实时数值 */
+.gp-bar-slider-value {
+  font-size: 11px; font-weight: 700;
+  color: var(--text);
+  min-width: 34px;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .gp-bar-slider input[type="range"] {
@@ -1075,7 +1087,9 @@ button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
 .gp-gate {
   position: fixed; inset: 0;
   z-index: 500;
-  display: flex; align-items: center; justify-content: center;
+  /* 用 align-items:center + 高度溢出时会把面板顶部顶出视口（滚也滚不回来），
+     改成 flex-start + 面板自身 margin:auto：装得下就居中，装不下就从顶部开始滚。 */
+  display: flex; align-items: flex-start; justify-content: center;
   padding: 20px;
   background: radial-gradient(circle at 50% 30%, #14142a 0%, #08080f 70%);
   overflow-y: auto;
@@ -1089,6 +1103,7 @@ button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
   border-radius: 16px;
   padding: 26px 22px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  margin: auto 0;
 }
 
 .gp-gate-title {
@@ -1219,4 +1234,23 @@ button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
   z-index: 300;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   cursor: pointer;
+}
+
+/* ═══════ Responsive: 连接门 ═══════
+   必须放在 .gp-gate 基础样式之后：同一优先级下，后出现的规则才赢。 */
+@media (max-height: 450px) {
+  /* 横屏手机高度只有 300–400px：连接门竖排铺会溢出视口，压紧并把两项下拉并排。 */
+  .gp-gate {
+    padding: 10px;
+  }
+  .gp-gate-panel {
+    padding: 12px 14px;
+  }
+  .gp-gate-title { font-size: 15px; margin-bottom: 8px; }
+  .gp-gate-hint { margin: 0 0 8px; font-size: 11px; }
+  .gp-gate-label { margin-bottom: 3px; font-size: 11px; }
+  .gp-gate-panel .gp-input { margin-bottom: 8px; }
+  .gp-gate-type { margin-bottom: 8px; padding: 7px 10px; }
+  .gp-gate-connect { margin-bottom: 8px; }
+  .gp-gate-row { padding-top: 8px; }
 }
