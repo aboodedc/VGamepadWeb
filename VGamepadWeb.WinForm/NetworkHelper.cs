@@ -1,17 +1,24 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
 namespace VGamepadWeb.WinForm
 {
+    /// <summary>
+    /// 一个本机 IPv4 地址及其网卡类型。Kind 是稳定键（"wifi" / "ethernet" / "other"），
+    /// 显示文案由界面按语言自己映射（Strings.IpLabel），这里不塞任何中文字面量。
+    /// </summary>
+    public sealed record LocalAddress(string Ip, string Kind, string Label);
+
     public static class NetworkHelper
     {
         /// <summary>
-        /// 1. جلب جميع عناوين الـ IPv4 الشغالة في الجهاز مرتبة تلقائياً (الـ Wi-Fi في الصدارة)
+        /// 1. جلب جميع عناوين الـ IPv4 الشغالة في الجهاز مرتبة تلقائياً (الـ Wi-Fi في الصدارة)،
+        /// 附带网卡类型（Wireless80211 → Wi-Fi，Ethernet → 以太网，其余 → 其它）。
         /// </summary>
-        public static List<string> GetAllLocalIPv4Addresses()
+        public static List<LocalAddress> GetAllLocalIPv4Addresses()
         {
-            List<string> ipList = new List<string>();
+            List<LocalAddress> addresses = new List<LocalAddress>();
 
             // جلب كروت الشبكة النشطة وترتيبها بحيث يكون الـ Wireless أولاً
             var sortedInterfaces = NetworkInterface.GetAllNetworkInterfaces()
@@ -25,6 +32,7 @@ namespace VGamepadWeb.WinForm
 
             foreach (NetworkInterface item in sortedInterfaces)
             {
+                (string kind, string label) = MapInterfaceKind(item.NetworkInterfaceType);
                 IPInterfaceProperties adapterProperties = item.GetIPProperties();
 
                 foreach (UnicastIPAddressInformation ip in adapterProperties.UnicastAddresses)
@@ -34,15 +42,15 @@ namespace VGamepadWeb.WinForm
                     {
                         string ipAddress = ip.Address.ToString();
 
-                        if (!ipList.Contains(ipAddress))
+                        if (!addresses.Any(existing => existing.Ip == ipAddress))
                         {
-                            ipList.Add(ipAddress);
+                            addresses.Add(new LocalAddress(ipAddress, kind, label));
                         }
                     }
                 }
             }
 
-            return ipList;
+            return addresses;
         }
 
         /// <summary>
@@ -50,16 +58,22 @@ namespace VGamepadWeb.WinForm
         /// </summary>
         public static string GetPreferredLocalIPv4Address()
         {
-            // نعتمد مباشرة على الدالة الأولى ونأخذ أول عنصر منها إن وجد
-            var allIPs = GetAllLocalIPv4Addresses();
+            List<LocalAddress> allIps = GetAllLocalIPv4Addresses();
 
-            if (allIPs != null && allIPs.Count > 0)
+            if (allIps.Count > 0)
             {
-                return allIPs[0]; // إرجاع العنصر الأول (وهو الـ Wi-Fi المرجح بفضل الترتيب)
+                return allIps[0].Ip; // إرجاع العنصر الأول (وهو الـ Wi-Fi المرجح بفضل الترتيب)
             }
 
             // خيار احتياطي آمن في حال عدم وجود أي اتصال شبكة فعال في الجهاز
             return "127.0.0.1";
         }
+
+        private static (string kind, string label) MapInterfaceKind(NetworkInterfaceType interfaceType) => interfaceType switch
+        {
+            NetworkInterfaceType.Wireless80211 => ("wifi", "Wi-Fi"),
+            NetworkInterfaceType.Ethernet => ("ethernet", "以太网"),
+            _ => ("other", "其它")
+        };
     }
 }

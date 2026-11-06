@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using System.Diagnostics;
 
 namespace VGamepadWeb.WinForm
@@ -28,7 +28,7 @@ namespace VGamepadWeb.WinForm
             // المسار الافتراضي لتعريفات الأجهزة في الويندوز ريجستري
             string registryPath = @"SYSTEM\CurrentControlSet\Services\ViGEmBus";
 
-            using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(registryPath))
+            using (RegistryKey key = Registry.LocalMachine.OpenSubKey(registryPath))
             {
                 return key != null; // إذا كان المفتاح موجوداً، فالتعريف مثبت
             }
@@ -48,7 +48,7 @@ namespace VGamepadWeb.WinForm
                 // 2. تحديث الاسم ليتطابق تماماً مع الملف الظاهر في الـ Solution Explorer
                 string resourceName = "VGamepadWeb.WinForm.ViGEmBus_1.22.0_x64_x86_arm64.exe";
 
-                using (Stream? stream = assembly.GetManifestResourceStream(resourceName))
+                using (Stream stream = assembly.GetManifestResourceStream(resourceName))
                 {
                     if (stream == null) throw new Exception("Embedded Driver resource not found.");
                     using (FileStream fileStream = new FileStream(tempExePath, FileMode.Create, FileAccess.Write))
@@ -67,7 +67,7 @@ namespace VGamepadWeb.WinForm
                     UseShellExecute = true
                 };
 
-                using (Process? process = Process.Start(psi))
+                using (Process process = Process.Start(psi))
                 {
                     process?.WaitForExit();
 

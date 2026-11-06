@@ -23,12 +23,24 @@ namespace VGamepadWeb.Core
         }
 
         // تحديث مهم: التحقق من كلمة المرور الاستاتيكية المركزية قبل بدء اتصال الـ WebRTC
-        public async Task SendOffer(string sdpOffer, int controllerType, bool enableVib, int sensitivity, string clientPassword = "")
+        public async Task SendOffer(string sdpOffer, int controllerType, bool enableVib, int sensitivity, string clientPassword = "", string clientId = "")
         {
             // التحقق من تطابق كلمة المرور القادمة من الهاتف مع كلمة مرور السيرفر
             if (_serverPassword == "" || clientPassword == _serverPassword)
             {
-                await _rtcManager.StartConnectionAsync(Context.ConnectionId, sdpOffer, (TypeController)controllerType, enableVib, sensitivity);
+                // 身份只用于「优先认领自己用过的槽位」：新客户端传 clientId，旧客户端退回远程 IP。
+                string? identity;
+                if (!string.IsNullOrEmpty(clientId))
+                {
+                    identity = "id:" + clientId;
+                }
+                else
+                {
+                    var remoteIp = Context.GetHttpContext()?.Connection.RemoteIpAddress;
+                    identity = remoteIp == null ? null : "ip:" + remoteIp;
+                }
+
+                await _rtcManager.StartConnectionAsync(Context.ConnectionId, sdpOffer, (TypeController)controllerType, enableVib, sensitivity, identity);
             }
             else
             {

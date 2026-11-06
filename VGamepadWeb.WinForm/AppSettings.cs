@@ -1,0 +1,94 @@
+using System.Text.Json;
+using VGamepadWeb.WinForm.UI;
+
+namespace VGamepadWeb.WinForm
+{
+    /// <summary>
+    /// 桌面端设置的唯一模型，落盘到 %APPDATA%\VGamepadWeb\settings.json。
+    /// 只剩端口 / 密码 / 语言三件事：托盘、自启、槽位配置都随界面减法一起砍掉了。
+    /// 读写全部走「临时文件 + Move 覆盖」：写一半崩掉不会留下半个 JSON。
+    /// </summary>
+    public sealed class AppSettings
+    {
+        private static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        public int Port { get; set; } = 5000;
+
+        public string Password { get; set; } = string.Empty;
+
+        /// <summary>界面语言，取值来自 UI.Languages。</summary>
+        public string Language { get; set; } = Languages.Chinese;
+
+        public static string SettingsDirectory => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "VGamepadWeb");
+
+        public static string SettingsPath => Path.Combine(SettingsDirectory, "settings.json");
+
+        /// <summary>
+        /// 启动时读取。文件不存在 → 默认；内容损坏 → 默认。
+        /// 旧版本多出来的成员（slots / autoStart / minimizeToTray 等）反序列化时直接忽略，
+        /// 不做任何兼容分支，也不会因此报错。
+        /// </summary>
+        public static AppSettings Load()
+        {
+            try
+            {
+                if (!File.Exists(SettingsPath))
+                {
+                    return new AppSettings();
+                }
+
+                string json = File.ReadAllText(SettingsPath);
+                AppSettings loaded = JsonSerializer.Deserialize<AppSettings>(json, SerializerOptions);
+
+                return Normalize(loaded);
+            }
+            catch (Exception)
+            {
+                // JsonException / IOException / UnauthorizedAccessException：一律按「没有可用设置」处理。
+                return new AppSettings();
+            }
+        }
+
+        /// <summary>原子写。返回 false 表示落盘失败，调用方负责提示。</summary>
+        public bool Save()
+        {
+            try
+            {
+                Directory.CreateDirectory(SettingsDirectory);
+
+                string tempPath = SettingsPath + ".tmp";
+                File.WriteAllText(tempPath, JsonSerializer.Serialize(this, SerializerOptions));
+                File.Move(tempPath, SettingsPath, overwrite: true);
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static AppSettings Normalize(AppSettings settings)
+        {
+            if (settings == null)
+            {
+                return new AppSettings();
+            }
+
+            settings.Password ??= string.Empty;
+
+            if (string.IsNullOrEmpty(settings.Language) || !Languages.All.Contains(settings.Language))
+            {
+                settings.Language = Languages.Chinese;
+            }
+
+            return settings;
+        }
+    }
+}
