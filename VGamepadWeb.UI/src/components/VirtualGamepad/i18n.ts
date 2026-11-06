@@ -29,6 +29,9 @@ const ar = {
     profile: 'البروفايل (تخصيص الأزرار)',
     buttonStyle: 'شكل الأزرار (التصميم)',
     xboxDefault: 'Xbox (الافتراضي)',
+    controllerType: 'نوع يد为单位 التحكم',
+    typeXbox360: 'Xbox 360',
+    typeDualShock4: 'DualShock 4 (PS4)',
     enableVibration: 'تفعيل الاهتزاز',
     on: 'مفعّل',
     off: 'معطّل',
@@ -53,7 +56,6 @@ const ar = {
     gateTitle: 'الاتصال بالجهاز',
 
     // Stable reason codes from the server
-    reasonSlotLocked: 'هذا المقعد مقفل، اختر مقعداً آخر',
     reasonSlotTaken: 'هذا المقعد مشغول، اختر مقعداً آخر',
     reasonNoFreeSlot: 'لا توجد مقاعد متاحة',
     reasonSlotInvalid: 'رقم المقعد غير صالح',
@@ -122,6 +124,9 @@ const en = {
     profile: 'Profile (Button Layout)',
     buttonStyle: 'Button Style (Theme)',
     xboxDefault: 'Xbox (Default)',
+    controllerType: 'Controller type',
+    typeXbox360: 'Xbox 360',
+    typeDualShock4: 'DualShock 4 (PS4)',
     enableVibration: 'Enable Vibration',
     on: 'On',
     off: 'Off',
@@ -146,7 +151,6 @@ const en = {
     gateTitle: 'Connect to device',
 
     // Stable reason codes from the server
-    reasonSlotLocked: 'This slot is locked, pick another one',
     reasonSlotTaken: 'This slot is in use, pick another one',
     reasonNoFreeSlot: 'No free slot available',
     reasonSlotInvalid: 'Invalid slot',
@@ -218,6 +222,9 @@ const zh = {
   profile: '配置方案（按键布局）',
   buttonStyle: '按键风格（主题）',
   xboxDefault: 'Xbox（默认）',
+  controllerType: '手柄类型',
+  typeXbox360: 'Xbox 360',
+  typeDualShock4: 'DualShock 4（PS4）',
   enableVibration: '启动振动',
   on: '开',
   off: '关',
@@ -242,7 +249,6 @@ const zh = {
   gateTitle: '连接设备',
 
   // Stable reason codes from the server
-  reasonSlotLocked: '该槽位已被锁定，请选其他槽位',
   reasonSlotTaken: '该槽位已被占用，请选其他槽位',
   reasonNoFreeSlot: '没有空闲槽位了',
   reasonSlotInvalid: '槽位号无效',

@@ -30,18 +30,17 @@ namespace VGamepadWeb.Core
         public int ControllerIndex { get; set; }
     }
 
-    /// <summary>落盘的槽位配置（启动时由桌面端灌进来）：类型 / 名称 / 锁定。</summary>
-    public sealed record SlotConfig(int Index, TypeController Type, string Name, bool Locked);
-
-    /// <summary>推给手机端的槽位投影。Slot 是 0-based，展示号 = Slot + 1 由客户端负责。</summary>
-    public sealed record SlotInfo(int Slot, bool Occupied, bool Locked, string Name);
+    /// <summary>
+    /// 推给手机端的槽位投影。Slot 是 0-based，展示号 = Slot + 1 由客户端负责。
+    /// </summary>
+    public sealed record SlotInfo(int Slot, bool Occupied);
 
     /// <summary>
     /// GetSnapshot() 的只读投影。Slot 是 0-based 的 ControllerIndex（等于 XInput 槽位），
-    /// 展示号 = Slot + 1 由 WinForm 负责。ControllerType 恒为槽位配置的类型，空槽也有值。
+    /// 展示号 = Slot + 1 由 WinForm 负责。ControllerType 是该槽位当前设备的实际类型。
     /// </summary>
     public sealed record GamepadSnapshot(
-        int Slot, string ControllerType, bool Occupied, string? ConnectionId, string Name, bool Locked);
+        int Slot, string? ControllerType, bool Occupied, string? ConnectionId);
 
     public class GamepadManager : IDisposable
     {
@@ -55,9 +54,10 @@ namespace VGamepadWeb.Core
         private sealed class GamepadSlot
         {
             public IVirtualGamepad? Device;
-            public TypeController Type = TypeController.Xbox360;
-            public string Name = string.Empty;
-            public bool Locked;
+
+            /// <summary>该槽位当前设备的类型；设备建好之后才有值，空槽为 null。</summary>
+            public TypeController? Type;
+
             public string? OwnerConnectionId;
 
             // 「上一次是谁坐在这个槽位上」。断开不清，重连才能认回同一台设备。
@@ -69,7 +69,7 @@ namespace VGamepadWeb.Core
 
         public event Action<string, byte, byte> OnVibrationReceived;
 
-        /// <summary>槽位占用 / 锁定 / 名称 / 类型变化后触发，宿主据此广播 SlotChanged。在锁外触发。</summary>
+        /// <summary>槽位占用 / 释放 / 设备类型变化后触发，宿主据此广播 SlotChanged。在锁外触发。</summary>
         public event Action? OnSlotsChanged;
 
         // حدث إعلام السيرفر برقم اليد الذي حصل عليه اللاعب فوراً
@@ -168,15 +168,17 @@ namespace VGamepadWeb.Core
 
         /// <summary>
         /// 占用槽位。必须在 WebRTC 协商之前调用：占不到就直接拒，别让客户端进入协商。
-        /// 指定槽位：必须空闲且未锁定（用户自己选的，优先尊重）；
-        /// 不指定：设备码命中 → IP 命中 → 从未被分配过的干净槽 → 最小空闲，全部跳过锁定槽。
-        /// 失败时 reason 是稳定码，客户端负责翻译：slot_invalid / slot_taken / slot_locked / no_free_slot。
+        /// 指定槽位：必须空闲（用户自己选的，优先尊重）；
+        /// 不指定：设备码命中 → IP 命中 → 从未被分配过的干净槽 → 最小空闲。
+        /// 设备类型由客户端决定（controllerType），服务端只照办。
+        /// 失败时 reason 是稳定码，客户端负责翻译：slot_invalid / slot_taken / no_free_slot。
         /// </summary>
         public bool TryClaimSlot(
             string connectionId,
             int? requestedSlot,
             string? clientId,
             string? remoteIp,
+            TypeController controllerType,
             bool enableVib,
             int sensitivity,
             out int slotIndex,
@@ -211,12 +213,6 @@ namespace VGamepadWeb.Core
                     if (target.OwnerConnectionId != null)
                     {
                         reason = "slot_taken";
-                        return false;
-                    }
-
-                    if (target.Locked)
-                    {
-                        reason = "slot_locked";
                         return false;
                     }
 
@@ -262,10 +258,14 @@ namespace VGamepadWeb.Core
 
                 GamepadSlot slot = _slots[assigned];
 
-                // 设备常驻：首次认领时按「槽位配置的类型」建设备（客户端不再决定类型），之后复用。
-                if (slot.Device == null)
+                // 设备常驻：首次认领时按客户端选的类型建设备，之后同一类型直接复用；
+                // 类型变了就得重建 —— Windows 里 Xbox 手柄和 DS4 是两种不同的设备。
+                if (slot.Device == null || slot.Type != controllerType)
                 {
-                    slot.Device = CreateGamepad(assigned, slot.Type);
+                    IVirtualGamepad? previous = slot.Device;
+                    slot.Device = CreateGamepad(assigned, controllerType);
+                    slot.Type = controllerType;
+                    DisposeDevice(previous);
                 }
 
                 slot.OwnerConnectionId = connectionId;
@@ -282,7 +282,7 @@ namespace VGamepadWeb.Core
                 }
 
                 _controllers[connectionId] = new GamepadSettings(
-                    enableVib, sensitivity, slot.Type, slot.Device, assigned);
+                    enableVib, sensitivity, controllerType, slot.Device, assigned);
 
                 slotIndex = assigned;
                 claimed = true;
@@ -302,10 +302,10 @@ namespace VGamepadWeb.Core
             return true;
         }
 
-        /// <summary>空闲 = 没人占用且没被锁定。</summary>
+        /// <summary>空闲 = 没人占用。</summary>
         private bool IsFree(int slot)
         {
-            return _slots[slot].OwnerConnectionId == null && !_slots[slot].Locked;
+            return _slots[slot].OwnerConnectionId == null;
         }
 
         /// <summary>
@@ -383,115 +383,6 @@ namespace VGamepadWeb.Core
             RaiseSlotsChanged();
         }
 
-        /// <summary>
-        /// 改槽位类型。只有空闲槽位能改：改类型要销毁并重建设备，Windows 会重新枚举、播设备接入音。
-        /// 返回 false 表示槽位正被占用；槽号不变。
-        /// </summary>
-        public bool SetSlotType(int slot, TypeController type)
-        {
-            IVirtualGamepad? previous = null;
-
-            lock (_indexLock)
-            {
-                if (slot < 0 || slot >= _slots.Length)
-                {
-                    return false;
-                }
-
-                GamepadSlot target = _slots[slot];
-                if (target.OwnerConnectionId != null)
-                {
-                    return false;
-                }
-
-                if (target.Type == type)
-                {
-                    return true;
-                }
-
-                // 设备还没建过：只改配置，首次认领时按新类型建。
-                if (target.Device == null)
-                {
-                    target.Type = type;
-                }
-                else
-                {
-                    previous = target.Device;
-                    target.Device = null;
-                    target.Type = type;
-                    target.Device = CreateGamepad(slot, type);
-                }
-            }
-
-            DisposeDevice(previous);
-            RaiseSlotsChanged();
-            return true;
-        }
-
-        public void SetSlotName(int slot, string name)
-        {
-            if (slot < 0 || slot >= _slots.Length)
-            {
-                return;
-            }
-
-            string normalized = (name ?? string.Empty).Trim();
-            if (normalized.Length > 24)
-            {
-                normalized = normalized.Substring(0, 24);
-            }
-
-            lock (_indexLock)
-            {
-                _slots[slot].Name = normalized;
-            }
-
-            RaiseSlotsChanged();
-        }
-
-        /// <summary>锁定只影响「能不能被选中」：锁定槽对任何客户端都不可用，解锁后立即可选。</summary>
-        public void SetSlotLocked(int slot, bool locked)
-        {
-            if (slot < 0 || slot >= _slots.Length)
-            {
-                return;
-            }
-
-            lock (_indexLock)
-            {
-                _slots[slot].Locked = locked;
-            }
-
-            RaiseSlotsChanged();
-        }
-
-        /// <summary>启动时把桌面端落盘的槽位配置灌进来；此时还没有设备，只写配置。</summary>
-        public void ApplySlotConfig(IReadOnlyList<SlotConfig> configs)
-        {
-            if (configs == null)
-            {
-                return;
-            }
-
-            lock (_indexLock)
-            {
-                foreach (SlotConfig config in configs)
-                {
-                    if (config.Index < 0 || config.Index >= _slots.Length)
-                    {
-                        continue;
-                    }
-
-                    GamepadSlot slot = _slots[config.Index];
-                    slot.Type = config.Type;
-                    slot.Name = (config.Name ?? string.Empty).Trim();
-                    slot.Locked = config.Locked;
-                }
-            }
-
-            RaiseSlotsChanged();
-        }
-
         /// <summary>推给手机端的槽位投影（不含 connectionId）。</summary>
         public IReadOnlyList<SlotInfo> GetSlotInfos()
         {
@@ -502,9 +393,7 @@ namespace VGamepadWeb.Core
                 {
                     infos.Add(new SlotInfo(
                         slot,
-                        _slots[slot].OwnerConnectionId != null,
-                        _slots[slot].Locked,
-                        _slots[slot].Name));
+                        _slots[slot].OwnerConnectionId != null));
                 }
 
                 return infos;
@@ -662,7 +551,7 @@ namespace VGamepadWeb.Core
 
         /// <summary>
         /// 只读快照：固定 4 条，Slot = 槽位下标（0-based，等于 XInput 槽位）。
-        /// Occupied = 当前有 Owner；ControllerType 恒为槽位配置的类型（空槽也有值），Name / Locked 供管理面用。
+        /// Occupied = 当前有 Owner；ControllerType 是该槽位当前设备的实际类型，空槽为 null。
         /// </summary>
         public IReadOnlyList<GamepadSnapshot> GetSnapshot()
         {
@@ -674,11 +563,9 @@ namespace VGamepadWeb.Core
                     GamepadSlot item = _slots[slot];
                     snapshot.Add(new GamepadSnapshot(
                         slot,
-                        item.Type.ToString(),
+                        item.Type?.ToString(),
                         item.OwnerConnectionId != null,
-                        item.OwnerConnectionId,
-                        item.Name,
-                        item.Locked));
+                        item.OwnerConnectionId));
                 }
             }
 

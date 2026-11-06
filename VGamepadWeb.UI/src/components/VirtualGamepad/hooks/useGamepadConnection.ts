@@ -5,8 +5,6 @@ import type { TranslationSet } from '../i18n';
 export interface SlotInfo {
   slot: number;
   occupied: boolean;
-  locked: boolean;
-  name: string;
 }
 
 interface UseGamepadConnectionProps {
@@ -14,6 +12,8 @@ interface UseGamepadConnectionProps {
   serverPassword?: string;
   enableVib: boolean;
   sensitivity: number;
+  /** 客户端自己选的手柄类型：0 = Xbox 360，1 = DualShock 4。服务端照办。 */
+  controllerType: number;
   t: TranslationSet;
 }
 
@@ -36,7 +36,7 @@ const getClientId = () => {
 };
 
 export const useGamepadConnection = ({
-  serverUrl, serverPassword = '', enableVib, sensitivity, t
+  serverUrl, serverPassword = '', enableVib, sensitivity, controllerType, t
 }: UseGamepadConnectionProps) => {
   const [connStatus, setConnStatus] = useState<'off' | 'ing' | 'on'>('off');
   const [latency, setLatency] = useState<number | null>(null);
@@ -58,7 +58,6 @@ export const useGamepadConnection = ({
   const reasonText = (reason: string) => {
     const tr = tRef.current;
     switch (reason) {
-      case 'slot_locked': return tr.reasonSlotLocked;
       case 'slot_taken': return tr.reasonSlotTaken;
       case 'no_free_slot': return tr.reasonNoFreeSlot;
       case 'slot_invalid': return tr.reasonSlotInvalid;
@@ -192,8 +191,8 @@ export const useGamepadConnection = ({
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       // slot 传 null：手柄位由服务端分配，用户不选。
-      // controllerType 位置只为老服务端兼容，固定 0，服务端已忽略。
-      await c.invoke('SendOffer', offer.sdp, 0, enableVib, sensitivity, serverPassword, getClientId(), null);
+      // controllerType 是自己选的手柄类型（0 = Xbox 360，1 = DualShock 4），服务端照办。
+      await c.invoke('SendOffer', offer.sdp, controllerType, enableVib, sensitivity, serverPassword, getClientId(), null);
     } catch (err) {
       console.error(err);
       closePeer();

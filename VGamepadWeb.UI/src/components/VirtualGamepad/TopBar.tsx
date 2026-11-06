@@ -34,6 +34,8 @@ interface TopBarProps {
   deleteProfile: (id: string) => void;
   theme: ThemeType;
   setTheme: (theme: ThemeType) => void;
+  controllerType: number;
+  setControllerType: (type: number) => void;
   enableVib: boolean;
   setEnableVib: (enable: boolean) => void;
   sensitivity: number;
@@ -51,7 +53,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   resetLayout, exportLayout, fileRef, importLayout, layout, toggleVisibility,
   showHitboxes, setShowHitboxes,
   activeProfile, profiles, switchProfile, createNewProfile, deleteProfile,
-  theme, setTheme, enableVib, setEnableVib, sensitivity, setSensitivity
+  theme, setTheme, controllerType, setControllerType, enableVib, setEnableVib, sensitivity, setSensitivity
 }) => {
   const { t } = useLanguage();
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -94,6 +96,18 @@ export const TopBar: React.FC<TopBarProps> = ({
           <option value="xbox">{t.xboxDefault}</option>
           <option value="ps">PlayStation</option>
           <option value="nintendo">Nintendo Switch</option>
+        </select>
+
+        {/* 手柄类型：决定服务端建哪种虚拟设备（Xbox 360 / DualShock 4）。连上后就不能改了。 */}
+        <select
+          className="gp-bar-select"
+          value={controllerType}
+          onChange={e => setControllerType(parseInt(e.target.value, 10))}
+          disabled={connStatus === 'on' || connStatus === 'ing'}
+          aria-label={t.controllerType}
+        >
+          <option value={0}>{t.typeXbox360}</option>
+          <option value={1}>{t.typeDualShock4}</option>
         </select>
 
         <button

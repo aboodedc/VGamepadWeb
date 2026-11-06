@@ -95,7 +95,7 @@ namespace VGamepadWeb.Core
                 gamepadManager.OnControllerIdAssigned += (connId, id) => OnControllerIdAssigned?.Invoke(connId, id);
                 rtcManager.OnPlayerDisconnected += (connId) => OnPlayerDisconnected?.Invoke(connId);
 
-                // 槽位任何变化（占用 / 释放 / 锁定 / 改名 / 改类型）都广播给所有手机端，选槽界面靠这个刷新。
+                // 槽位任何变化（占用 / 释放 / 设备类型）都广播给所有手机端，选槽界面靠这个刷新。
                 gamepadManager.OnSlotsChanged += () => BroadcastSlots(hubContext, gamepadManager.GetSlotInfos());
 
                 rtcManager.OnAnswerReady += async (connectionId, sdpAnswer) =>
@@ -122,12 +122,6 @@ namespace VGamepadWeb.Core
         public void UpdateServerPassword(string newPassword)
         {
             GamepadHub.SetPassword(newPassword);
-        }
-
-        /// <summary>启动时把桌面端落盘的槽位配置（类型 / 名称 / 锁定）灌进管理器。</summary>
-        public void ApplySlotConfig(IReadOnlyList<SlotConfig> configs)
-        {
-            GamepadManager?.ApplySlotConfig(configs);
         }
 
         /// <summary>

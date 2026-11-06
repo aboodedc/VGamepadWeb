@@ -32,8 +32,8 @@ namespace VGamepadWeb.Core
         /// <summary>
         /// 占槽 + 建立 WebRTC。
         /// 参数顺序是历史包袱：前五个位置必须与老客户端一致（sdp, controllerType, enableVib, sensitivity, password），
-        /// 否则现网缓存的老页面会直接绑定失败。`controllerType` 现在不参与任何判断（类型归槽位），
-        /// `slot` 放在末尾且可空：老客户端不传 → 按「最小空闲号」顺序分配。
+        /// 否则现网缓存的老页面会直接绑定失败。`controllerType` 现在是客户端自选的手柄类型（0 = Xbox 360，1 = DualShock 4），
+        /// 服务端照办不干涉；`slot` 放在末尾且可空：老客户端不传 → 按「最小空闲号」顺序分配。
         /// </summary>
         public async Task SendOffer(
             string sdpOffer,
@@ -53,12 +53,17 @@ namespace VGamepadWeb.Core
                 return;
             }
 
+            // 类型由客户端自己选：0 = Xbox 360，其余一律回落 Xbox 360。
+            TypeController type = controllerType == (int)TypeController.DualShock4
+                ? TypeController.DualShock4
+                : TypeController.Xbox360;
+
             // 身份只用于「优先认领自己上次的槽位」：设备码（clientId）优先，拿不到就退回远程 IP。
             string? remoteIp = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString();
 
             // 占位必须在 WebRTC 协商之前：占不到就回稳定码并停手，绝不建立 DataChannel。
             if (!_gamepadManager.TryClaimSlot(
-                    Context.ConnectionId, slot, clientId, remoteIp, enableVib, sensitivity,
+                    Context.ConnectionId, slot, clientId, remoteIp, type, enableVib, sensitivity,
                     out int slotIndex, out string reason))
             {
                 ServerLog.Warn($"占位失败：{reason}（连接 {Context.ConnectionId}）");

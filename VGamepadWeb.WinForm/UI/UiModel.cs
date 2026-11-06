@@ -19,14 +19,8 @@ namespace VGamepadWeb.WinForm.UI
 
         public bool Occupied { get; set; }
 
-        /// <summary>设备实际类型："xbox" / "ds4"；空槽给空串，界面显示 —。</summary>
+        /// <summary>设备实际类型："xbox" / "ds4"；空槽给空串。</summary>
         public string Type { get; set; } = string.Empty;
-
-        /// <summary>槽位配置的名称；空名时界面回退「玩家 N」。</summary>
-        public string Name { get; set; } = string.Empty;
-
-        /// <summary>槽位是否锁定（锁定后手机端选不到）。</summary>
-        public bool Locked { get; set; }
 
         /// <summary>0-based ControllerIndex；空槽为 -1。</summary>
         public int ControllerId { get; set; } = -1;

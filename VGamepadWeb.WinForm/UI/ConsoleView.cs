@@ -79,7 +79,6 @@ namespace VGamepadWeb.WinForm.UI
         public event Action CopyAddress;
         public event Action<int, string> CommitCredentials;
         public event Action<string> LanguageChanged;
-        public event Action<int> ConfigureSlot;
         public event Action<int> DisconnectSlot;
 
         public ConsoleView()
@@ -224,9 +223,7 @@ namespace VGamepadWeb.WinForm.UI
 
                     sb.Append(slot.Slot).Append(':').Append(slot.Occupied ? '1' : '0').Append(slot.Type).Append(':')
                       .Append(slot.ControllerId).Append(':')
-                      .Append(slot.LatencyMs.HasValue ? slot.LatencyMs.Value : -1).Append(':')
-                      .Append(slot.Name).Append(':')
-                      .Append(slot.Locked ? '1' : '0')
+                      .Append(slot.LatencyMs.HasValue ? slot.LatencyMs.Value : -1)
                       .Append(';');
                 }
             }
@@ -992,26 +989,16 @@ namespace VGamepadWeb.WinForm.UI
 
                 if (occupied)
                 {
+                    // 只剩「断开连接」一个操作：槽位设置整套取消，卡片不再可点配置。
                     card.PrimaryButton = R(f, cardX + cardPad, cardY + 88f, 84f, 36f);
-                    card.SecondaryButton = R(f, cardX + cardPad + 92f, cardY + 88f, 84f, 36f);
-                    card.ShowSecondary = true;
 
-                    Hit configHit = AddHit(f, card.PrimaryButton, "slot" + i + ":config", HitAction.Configure, true);
-                    configHit.Slot = slotNumber;
-
-                    Hit disconnectHit = AddHit(f, card.SecondaryButton, "slot" + i + ":disconnect", HitAction.Disconnect, true);
+                    Hit disconnectHit = AddHit(f, card.PrimaryButton, "slot" + i + ":disconnect", HitAction.Disconnect, true);
                     disconnectHit.Slot = slotNumber;
                 }
                 else
                 {
                     // 空闲卡没有按钮：手柄线稿 + 一句提示横排，不再居中留一大片空白。
                     card.PrimaryButton = RectangleF.Empty;
-                    card.SecondaryButton = RectangleF.Empty;
-                    card.ShowSecondary = false;
-
-                    // 整张卡可点：空闲槽位也能预配置类型 / 名称 / 锁定。
-                    Hit cardHit = AddHit(f, card.Bounds, "slot" + i + ":card", HitAction.Configure, true);
-                    cardHit.Slot = slotNumber;
                 }
 
                 f.Cards.Add(card);
@@ -1535,8 +1522,7 @@ namespace VGamepadWeb.WinForm.UI
             bool xbox = IsXboxBrand(card.Brand);
 
             // 已连接 = 按手柄品牌铺浅底；空闲 = 略深于面板的灰底，跟外层白面板分得开。
-            // 空闲卡整张可点，hover 换成按钮的悬停灰，提示「这里能点」。
-            bool cardHover = !card.Occupied && IsHover("slot" + card.Index + ":card");
+            bool cardHover = false;
             Color back = card.Occupied
                 ? (xbox ? Theme.XboxBg : Theme.PsBg)
                 : (cardHover ? Theme.ButtonHover : Theme.CardIdle);
@@ -1559,75 +1545,38 @@ namespace VGamepadWeb.WinForm.UI
                     StringAlignment.Center);
             }
 
-            // 标题：配置了名字就显示名字，否则保持「玩家 N」；锁定槽位在后面追加一个可见标识。
-            string title = card.Item != null && !string.IsNullOrWhiteSpace(card.Item.Name)
-                ? card.Item.Name
-                : Strings.T(lang, "slot.player", card.SlotNumber);
-            string lockLabel = card.Item != null && card.Item.Locked ? Strings.T(lang, "slot.locked") : null;
+            // 标题固定「玩家 N」：槽位名称与锁定整套配置已取消。
+            string title = Strings.T(lang, "slot.player", card.SlotNumber);
 
-            using (Font lockFont = lockLabel != null ? Theme.Sans(11.5f * s, FontStyle.Bold) : null)
+            using (Font titleFont = CreateFittedFont(false, 13f, s, FontStyle.Bold, title, card.TitleRect.Width, 11f))
             {
-                float lockWidth = lockLabel != null ? Measure(lockLabel, lockFont) + Snap(6f * s) : 0f;
-                float titleMax = Math.Max(0f, card.TitleRect.Width - lockWidth);
+                float titleWidth = Math.Min(Measure(title, titleFont), card.TitleRect.Width);
 
-                using (Font titleFont = CreateFittedFont(false, 13f, s, FontStyle.Bold, title, titleMax, 11f))
+                if (f.Rtl)
                 {
-                    float titleWidth = Math.Min(Measure(title, titleFont), titleMax);
-
-                    if (f.Rtl)
-                    {
-                        // RTL：标题贴右，「已锁定」标记跟在标题左边。
-                        float titleRight = card.TitleRect.Right;
-                        DrawText(
-                            g,
-                            title,
-                            titleFont,
-                            Theme.Text,
-                            Snap(new RectangleF(titleRight - titleWidth, card.TitleRect.Top, titleWidth + Snap(2f * s), card.TitleRect.Height)),
-                            StringAlignment.Far,
-                            StringAlignment.Center,
-                            true);
-
-                        if (lockLabel != null)
-                        {
-                            float lockRight = Snap(titleRight - titleWidth - Snap(6f * s));
-                            DrawText(
-                                g,
-                                lockLabel,
-                                lockFont,
-                                Theme.Amber,
-                                Snap(new RectangleF(card.TitleRect.Left, card.TitleRect.Top, Math.Max(0f, lockRight - card.TitleRect.Left), card.TitleRect.Height)),
-                                StringAlignment.Far,
-                                StringAlignment.Center,
-                                false);
-                        }
-                    }
-                    else
-                    {
-                        DrawText(
-                            g,
-                            title,
-                            titleFont,
-                            Theme.Text,
-                            Snap(new RectangleF(card.TitleRect.Left, card.TitleRect.Top, titleWidth + Snap(2f * s), card.TitleRect.Height)),
-                            StringAlignment.Near,
-                            StringAlignment.Center,
-                            true);
-
-                        if (lockLabel != null)
-                        {
-                            float lockLeft = Snap(card.TitleRect.Left + titleWidth + Snap(6f * s));
-                            DrawText(
-                                g,
-                                lockLabel,
-                                lockFont,
-                                Theme.Amber,
-                                Snap(new RectangleF(lockLeft, card.TitleRect.Top, Math.Max(0f, card.TitleRect.Right - lockLeft), card.TitleRect.Height)),
-                                StringAlignment.Near,
-                                StringAlignment.Center,
-                                false);
-                        }
-                    }
+                    // RTL：标题贴右。
+                    float titleRight = card.TitleRect.Right;
+                    DrawText(
+                        g,
+                        title,
+                        titleFont,
+                        Theme.Text,
+                        Snap(new RectangleF(titleRight - titleWidth, card.TitleRect.Top, titleWidth + Snap(2f * s), card.TitleRect.Height)),
+                        StringAlignment.Far,
+                        StringAlignment.Center,
+                        true);
+                }
+                else
+                {
+                    DrawText(
+                        g,
+                        title,
+                        titleFont,
+                        Theme.Text,
+                        Snap(new RectangleF(card.TitleRect.Left, card.TitleRect.Top, titleWidth + Snap(2f * s), card.TitleRect.Height)),
+                        StringAlignment.Near,
+                        StringAlignment.Center,
+                        true);
                 }
             }
 
@@ -1754,8 +1703,7 @@ namespace VGamepadWeb.WinForm.UI
                 g.FillRectangle(brush, card.FooterLine);
             }
 
-            DrawButton(g, f, card.PrimaryButton, Strings.T(lang, "slot.config"), 12.5f, ButtonStyle.Plain, "slot" + card.Index + ":config", true);
-            DrawButton(g, f, card.SecondaryButton, Strings.T(lang, "slot.disconnect"), 12.5f, ButtonStyle.Danger, "slot" + card.Index + ":disconnect", true);
+            DrawButton(g, f, card.PrimaryButton, Strings.T(lang, "slot.disconnect"), 12.5f, ButtonStyle.Danger, "slot" + card.Index + ":disconnect", true);
 
             // 延迟：数值在上、标签在下，右对齐成一列；<20ms 绿、≥20ms 暗黄、无数据就是破折号。
             int? latency = card.Item != null ? card.Item.LatencyMs : null;
@@ -2209,17 +2157,6 @@ namespace VGamepadWeb.WinForm.UI
 
                     break;
 
-                case HitAction.Configure:
-                    {
-                        Action<int> handler = ConfigureSlot;
-                        if (handler != null)
-                        {
-                            handler(hit.Slot);
-                        }
-
-                        break;
-                    }
-
                 case HitAction.Disconnect:
                     {
                         Action<int> handler = DisconnectSlot;
@@ -2425,7 +2362,6 @@ namespace VGamepadWeb.WinForm.UI
             OpenLanguage,
             FocusPort,
             FocusPass,
-            Configure,
             Disconnect
         }
 
@@ -2466,8 +2402,6 @@ namespace VGamepadWeb.WinForm.UI
             public RectangleF GlyphRect;
             public RectangleF HintRect;
             public RectangleF PrimaryButton;
-            public RectangleF SecondaryButton;
-            public bool ShowSecondary;
         }
 
         private sealed class Frame

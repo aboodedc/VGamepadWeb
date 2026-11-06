@@ -35,6 +35,10 @@ const VirtualGamepadInner: React.FC = () => {
   });
 
   const [theme, setTheme] = useState<ThemeType>(() => (localStorage.getItem('gamepad_theme') as ThemeType) || 'xbox');
+  // 手柄类型：0 = Xbox 360，1 = DualShock 4。服务端按它建虚拟设备，连上后不能再改。
+  const [controllerType, setControllerType] = useState<number>(
+    () => parseInt(localStorage.getItem('gamepad_ctype') || '0', 10) === 1 ? 1 : 0
+  );
   const [layout, setLayout] = useState<GamepadLayout>(() => {
     const initialTheme = (localStorage.getItem('gamepad_theme') as ThemeType) || 'xbox';
     const initialProfile = localStorage.getItem('gamepad_active_profile') || 'default';
@@ -64,7 +68,7 @@ const VirtualGamepadInner: React.FC = () => {
     connStatus, latency, controllerId, notice,
     connect, dismissNotice, sendButton, sendJoystick
   } = useGamepadConnection({
-    serverUrl: actualServerUrl, serverPassword, enableVib, sensitivity, t
+    serverUrl: actualServerUrl, serverPassword, enableVib, sensitivity, controllerType, t
   });
 
   // Clear selection when exiting edit mode
@@ -105,6 +109,7 @@ const VirtualGamepadInner: React.FC = () => {
   // Persist
   useEffect(() => { localStorage.setItem(`${LAYOUT_KEY}_${activeProfile}_${theme}`, JSON.stringify(layout)); }, [layout, theme, activeProfile]);
   useEffect(() => { localStorage.setItem('gamepad_theme', theme); }, [theme]);
+  useEffect(() => { localStorage.setItem('gamepad_ctype', controllerType.toString()); }, [controllerType]);
   useEffect(() => { localStorage.setItem('gamepad_active_profile', activeProfile); }, [activeProfile]);
   useEffect(() => { localStorage.setItem('gamepad_profiles', JSON.stringify(profiles)); }, [profiles]);
   useEffect(() => { localStorage.setItem('gamepad_vib', enableVib.toString()); }, [enableVib]);
@@ -246,6 +251,7 @@ const VirtualGamepadInner: React.FC = () => {
         activeProfile={activeProfile} profiles={profiles} switchProfile={switchProfile}
         createNewProfile={createNewProfile} deleteProfile={deleteProfile}
         theme={theme} setTheme={setTheme}
+        controllerType={controllerType} setControllerType={setControllerType}
         enableVib={enableVib} setEnableVib={setEnableVib}
         sensitivity={sensitivity} setSensitivity={setSensitivity}
       />
