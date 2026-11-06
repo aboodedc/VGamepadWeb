@@ -30,7 +30,7 @@ namespace VGamepadWeb.WinForm.UI
 
                 // 地址与设置
                 ["addr.title"] = ("手机访问地址 · 在手机浏览器中输入", "Phone address · open in mobile browser"),
-                ["addr.hint"] = ("手机与电脑需连接同一 Wi-Fi / 局域网，首次连接时输入访问密码。", "Phone and PC must share the same Wi-Fi / LAN. Enter the password on first connect."),
+                ["addr.hint"] = ("手机与电脑需连接同一 Wi-Fi / 局域网", "Phone and PC must share the same Wi-Fi / LAN."),
                 ["addr.copy"] = ("复制地址", "Copy"),
                 ["addr.port"] = ("服务器端口", "Port"),
                 ["addr.password"] = ("访问密码", "Password"),
