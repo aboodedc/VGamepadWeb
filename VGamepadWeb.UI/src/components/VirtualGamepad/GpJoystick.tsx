@@ -88,7 +88,13 @@ export const GpJoystick: React.FC<{
     };
     document.addEventListener('touchmove', move, { passive: false });
     document.addEventListener('touchend', end);
-    return () => { document.removeEventListener('touchmove', move); document.removeEventListener('touchend', end); };
+    // 锁屏 / 来电 / 切应用时系统只发 touchcancel：不接住它，摇杆会停在最后的位置。
+    document.addEventListener('touchcancel', end);
+    return () => {
+      document.removeEventListener('touchmove', move);
+      document.removeEventListener('touchend', end);
+      document.removeEventListener('touchcancel', end);
+    };
   }, [canvasRef, calcStick]);
 
   const onTouchStart = (e: React.TouchEvent) => {

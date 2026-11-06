@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import type { GamepadLayout } from './types';
 import { BTN_IDS, STICK_IDS } from './constants';
 import { useLanguage } from './LanguageContext';
-import type { Language } from './i18n';
 import { AboutModal } from './AboutModal';
 
 interface TopBarProps {
@@ -19,7 +18,6 @@ interface TopBarProps {
   setMenuOpen: (open: boolean) => void;
   visibilityMenuOpen: boolean;
   setVisibilityMenuOpen: (open: boolean) => void;
-  setSettingsOpen: (open: boolean) => void;
   resetLayout: () => void;
   exportLayout: () => void;
   fileRef: React.RefObject<HTMLInputElement | null>;
@@ -28,30 +26,39 @@ interface TopBarProps {
   toggleVisibility: (id: string) => void;
   showHitboxes: boolean;
   setShowHitboxes: (show: boolean) => void;
+  // 从设置弹窗搬出来的手柄参数：直接摊在这一行里，不再有弹窗。
+  activeProfile: string;
+  profiles: { id: string; name: string }[];
+  switchProfile: (id: string) => void;
+  createNewProfile: () => void;
+  deleteProfile: (id: string) => void;
+  enableVib: boolean;
+  setEnableVib: (enable: boolean) => void;
+  sensitivity: number;
+  setSensitivity: (sens: number) => void;
 }
 
-const LANGUAGE_OPTIONS: { value: Language; label: string; flag: string }[] = [
-  { value: 'ar', label: 'العربية', flag: '🇸🇦' },
-  { value: 'en', label: 'English', flag: '🇬🇧' },
-];
-
+/**
+ * 顶栏是手柄界面的唯一一行：状态 + 所有可调项。
+ * 配置方案、按键风格、启动振动、全屏都直接摆在这一行上，
+ * 原来的设置弹窗已经拆掉，不再有第二处入口。
+ */
 export const TopBar: React.FC<TopBarProps> = ({
   connStatus, latency, controllerId, isBarHidden, setIsBarHidden, isFullscreen, toggleFullscreen,
   editMode, setEditMode, menuOpen, setMenuOpen, visibilityMenuOpen, setVisibilityMenuOpen,
-  setSettingsOpen, resetLayout, exportLayout, fileRef, importLayout, layout, toggleVisibility,
-  showHitboxes, setShowHitboxes
+  resetLayout, exportLayout, fileRef, importLayout, layout, toggleVisibility,
+  showHitboxes, setShowHitboxes,
+  activeProfile, profiles, switchProfile, createNewProfile, deleteProfile,
+  enableVib, setEnableVib, sensitivity, setSensitivity
 }) => {
-  const { t, language, setLanguage } = useLanguage();
-  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const { t } = useLanguage();
   const [aboutOpen, setAboutOpen] = useState(false);
-
-  const currentLang = LANGUAGE_OPTIONS.find(o => o.value === language);
 
   return (
     <>
       <div className={`gp-bar ${isBarHidden ? 'hidden' : ''}`}>
-        <div className={`gp-dot ${connStatus}`} onClick={() => setSettingsOpen(true)} />
-        <span className="gp-bar-status" onClick={() => setSettingsOpen(true)}>
+        <span className={`gp-dot ${connStatus}`} />
+        <span className="gp-bar-status">
           {connStatus === 'on' ? t.connected : connStatus === 'ing' ? t.connecting : t.disconnected}
         </span>
         {connStatus === 'on' && latency !== null && (
@@ -65,17 +72,47 @@ export const TopBar: React.FC<TopBarProps> = ({
           </span>
         )}
         <div className="gp-spacer" />
+
+        {/* 手柄参数：配置方案 / 按键风格 / 启动振动 / 灵敏度 —— 全在这一行。
+            手柄类型不在这里：它决定服务端建哪种设备，只能在连接门里选。 */}
+        <select
+          className="gp-bar-select"
+          value={activeProfile}
+          onChange={e => switchProfile(e.target.value)}
+          aria-label={t.profile}
+        >
+          {profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+
+        <button
+          className={`gp-bar-btn gp-bar-toggle ${enableVib ? 'on' : 'off'}`}
+          onClick={() => setEnableVib(!enableVib)}
+          aria-label={t.enableVibration}
+        >
+          {t.enableVibration}
+          <span className="gp-bar-toggle-state">{enableVib ? t.on : t.off}</span>
+        </button>
+
+        <label className="gp-bar-slider" aria-label={`${t.sensitivity} (${sensitivity}%)`}>
+          <span className="gp-bar-slider-label">{t.sensitivity}</span>
+          <input
+            type="range"
+            min="10" max="200"
+            value={sensitivity}
+            onChange={e => setSensitivity(parseInt(e.target.value, 10))}
+          />
+          <span className="gp-bar-slider-value">{sensitivity}%</span>
+        </label>
+
+        <button className="gp-bar-btn" onClick={toggleFullscreen}>
+          {isFullscreen ? t.minimize : t.fullscreen}
+        </button>
+
         {isFullscreen && (
           <button className="gp-bar-btn" onClick={() => setIsBarHidden(true)}>
             {t.hide}
           </button>
         )}
-        <button
-          className="gp-bar-btn"
-          onClick={toggleFullscreen}
-        >
-          {isFullscreen ? t.minimize : t.fullscreen}
-        </button>
         <button
           className={`gp-bar-btn ${editMode ? 'done' : ''}`}
           onClick={() => setEditMode(!editMode)}
@@ -92,7 +129,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         )}
         {editMode && (
           <div className="gp-menu-wrap">
-            <button className="gp-bar-btn" onClick={() => { setVisibilityMenuOpen(!visibilityMenuOpen); setMenuOpen(false); setLangMenuOpen(false); }}>
+            <button className="gp-bar-btn" onClick={() => { setVisibilityMenuOpen(!visibilityMenuOpen); setMenuOpen(false); }}>
               {t.buttons}
             </button>
             {visibilityMenuOpen && (
@@ -102,7 +139,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   return (
                     <button key={id} onClick={() => toggleVisibility(id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{id === 'LeftStick' ? t.leftStick : id === 'RightStick' ? t.rightStick : id}</span>
-                      <span className='promptfont'>{isHidden ? '\u{1F315}' : '\u{1F311}'}</span>
+                      <span className="gp-vis-state">{isHidden ? t.hideControl : t.show}</span>
                     </button>
                   );
                 })}
@@ -111,41 +148,20 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
         )}
 
-        {/* Language Menu */}
         <div className="gp-menu-wrap">
-          <button
-            className="gp-bar-btn"
-            onClick={() => { setLangMenuOpen(!langMenuOpen); setMenuOpen(false); setVisibilityMenuOpen(false); }}
-            title={t.language}
-          >
-            {currentLang?.flag} {currentLang?.label}
-          </button>
-          {langMenuOpen && (
-            <div className="gp-dropdown gp-lang-dropdown">
-              {LANGUAGE_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => { setLanguage(opt.value); setLangMenuOpen(false); }}
-                  className={language === opt.value ? 'gp-lang-active' : ''}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <span>{opt.flag}</span>
-                  <span>{opt.label}</span>
-                  {language === opt.value && <span style={{ marginInlineStart: 'auto' }}>✓</span>}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="gp-menu-wrap">
-          <button className="gp-bar-btn" onClick={() => { setMenuOpen(!menuOpen); setVisibilityMenuOpen(false); setLangMenuOpen(false); }}>☰</button>
+          <button className="gp-bar-btn" onClick={() => { setMenuOpen(!menuOpen); setVisibilityMenuOpen(false); }}>{t.menu}</button>
           {menuOpen && (
             <div className="gp-dropdown promptfont">
               <button onClick={resetLayout}>{t.reset}</button>
               <button onClick={exportLayout}>{t.export}</button>
               <button onClick={() => { fileRef.current?.click(); }}>{t.import}</button>
-              <button onClick={() => { setSettingsOpen(true); setMenuOpen(false); }}>{t.connection}</button>
+              <button onClick={() => { createNewProfile(); setMenuOpen(false); }}>{t.newProfile}</button>
+              <button
+                onClick={() => { deleteProfile(activeProfile); setMenuOpen(false); }}
+                disabled={profiles.length <= 1}
+              >
+                {t.deleteProfile}
+              </button>
               <button onClick={() => { setAboutOpen(true); setMenuOpen(false); }}>{t.about}</button>
             </div>
           )}
@@ -154,11 +170,11 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {isBarHidden && (
-        <button 
-          className="promptfont gp-show-bar-btn"
+        <button
+          className="gp-show-bar-btn"
           onClick={() => setIsBarHidden(false)}
         >
-          {"\u{1F441}"}
+          {t.showBar}
         </button>
       )}
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />

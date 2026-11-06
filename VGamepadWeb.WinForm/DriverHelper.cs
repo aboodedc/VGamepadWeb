@@ -1,10 +1,31 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using System.Diagnostics;
+using VGamepadWeb.Core;
+using VGamepadWeb.WinForm.UI;
 
 namespace VGamepadWeb.WinForm
 {
     public static class DriverHelper
     {
+        /// <summary>
+        /// 语言：装驱动失败时的系统弹窗要跟随界面语言。
+        /// 装驱动发生在界面起来之前，所以从落盘设置里直接读。
+        /// </summary>
+        private static string CurrentLanguage
+        {
+            get
+            {
+                try
+                {
+                    return AppSettings.Load().Language;
+                }
+                catch (Exception)
+                {
+                    return Languages.Chinese;
+                }
+            }
+        }
+
         /// <summary>
         /// الفحص المركزي: يتحقق من وجود التعريف، وإذا لم يجده يقوم بتثبيته فوراً
         /// </summary>
@@ -28,7 +49,7 @@ namespace VGamepadWeb.WinForm
             // المسار الافتراضي لتعريفات الأجهزة في الويندوز ريجستري
             string registryPath = @"SYSTEM\CurrentControlSet\Services\ViGEmBus";
 
-            using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(registryPath))
+            using (RegistryKey key = Registry.LocalMachine.OpenSubKey(registryPath))
             {
                 return key != null; // إذا كان المفتاح موجوداً، فالتعريف مثبت
             }
@@ -48,7 +69,7 @@ namespace VGamepadWeb.WinForm
                 // 2. تحديث الاسم ليتطابق تماماً مع الملف الظاهر في الـ Solution Explorer
                 string resourceName = "VGamepadWeb.WinForm.ViGEmBus_1.22.0_x64_x86_arm64.exe";
 
-                using (Stream? stream = assembly.GetManifestResourceStream(resourceName))
+                using (Stream stream = assembly.GetManifestResourceStream(resourceName))
                 {
                     if (stream == null) throw new Exception("Embedded Driver resource not found.");
                     using (FileStream fileStream = new FileStream(tempExePath, FileMode.Create, FileAccess.Write))
@@ -67,18 +88,30 @@ namespace VGamepadWeb.WinForm
                     UseShellExecute = true
                 };
 
-                using (Process? process = Process.Start(psi))
+                using (Process process = Process.Start(psi))
                 {
-                    process?.WaitForExit();
+                    // 安装器不能在启动路径上无限期挂着：这段时间窗口还没起来，用户只会觉得程序没反应。
+                    bool exited = process == null || process.WaitForExit(180_000);
 
-                    if (File.Exists(tempExePath)) File.Delete(tempExePath);
+                    if (!exited)
+                    {
+                        ServerLog.Warn("ViGEmBus 安装器 3 分钟没有退出，按安装失败处理（文件仍在运行，不删临时文件）");
+                    }
 
-                    return IsDriverInstalled();
+                    if (exited && File.Exists(tempExePath))
+                    {
+                        File.Delete(tempExePath);
+                    }
+
+                    return exited && IsDriverInstalled();
                 }
             }
             catch (Exception ex)
             {
-                System.Windows.Forms.MessageBox.Show($"فشل التثبيت التلقائي للتعريف المساعد: {ex.Message}", "خطأ في النظام");
+                string lang = CurrentLanguage;
+                System.Windows.Forms.MessageBox.Show(
+                    Strings.WithDirectionMarks(Strings.T(lang, "dialog.driverInstallFailed.text", ex.Message), lang),
+                    Strings.WithDirectionMarks(Strings.T(lang, "dialog.driverInstallFailed.title"), lang));
                 if (File.Exists(tempExePath)) File.Delete(tempExePath);
                 return false;
             }

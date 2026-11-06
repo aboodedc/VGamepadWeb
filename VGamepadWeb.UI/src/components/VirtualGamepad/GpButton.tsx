@@ -94,7 +94,7 @@ export const GpButton: React.FC<{
     <div
       className={`gp-ctrl ${editMode ? 'edit' : ''} ${isSelected ? 'selected' : ''}`}
       style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-      onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+      onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}
       onMouseDown={onMouseDown} onMouseUp={onMouseUp} onMouseLeave={onMouseLeave}
       onContextMenu={e => e.preventDefault()}
     >

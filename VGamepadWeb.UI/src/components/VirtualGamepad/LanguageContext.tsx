@@ -1,8 +1,15 @@
 import React, { createContext, useContext, useState } from 'react';
-import type { Language } from './i18n';
+import type { Language, TranslationSet } from './i18n';
 import { translations } from './i18n';
 
-type TranslationSet = typeof translations[Language];
+const LANGUAGES: Language[] = ['ar', 'en', 'zh'];
+
+// 首屏：存储过的优先，否则按浏览器语言，非中文一律回落到 en。
+const detectLanguage = (): Language => {
+  const stored = localStorage.getItem('gamepad_language');
+  if (stored && (LANGUAGES as string[]).includes(stored)) return stored as Language;
+  return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+};
 
 interface LanguageContextValue {
   language: Language;
@@ -18,7 +25,7 @@ const LanguageContext = createContext<LanguageContextValue>({
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const lang = (localStorage.getItem('gamepad_language') as Language) || 'en';
+    const lang = detectLanguage();
     // Set direction synchronously before first render to avoid flash
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;

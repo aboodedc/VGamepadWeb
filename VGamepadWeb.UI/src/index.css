@@ -32,12 +32,34 @@ html, body {
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, 'Segoe UI', Roboto, 'Microsoft YaHei UI', sans-serif;
   font-size: 14px;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  /* 移动端长按不再弹出系统选择菜单 / 复制气泡 */
+  -webkit-touch-callout: none;
   touch-action: none;
+}
+
+/* 输入框例外：密码要能选中、能编辑，禁用只针对「复制出去」。 */
+input, textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* 长按拖拽时 Safari 会生成半透明的「幽灵影像」，禁掉。 */
+img, svg, canvas, video {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+/* 长按任何控件都不该冒出系统菜单 / 选词气泡 / 原生 tooltip。 */
+button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #root {
@@ -52,13 +74,17 @@ html, body {
   width: 100%; height: 100dvh;
   overflow: hidden;
   background: var(--bg);
+  /* 顶栏隐藏后会脱离布局流（见 .gp-bar.hidden），这里给它一个确定的定位父级。 */
+  position: relative;
 }
 
 /* ═══════ Top Bar ═══════ */
 .gp-bar {
-  height: 40px; min-height: 40px;
+  /* 一行装不下就折行：手机上顶栏本来就挤，宁可占两行，也不能把「菜单/编辑」推到屏幕外。 */
+  height: auto; min-height: 40px;
   display: flex; align-items: center; gap: 8px;
-  padding: 0 12px;
+  flex-wrap: wrap;
+  padding: 4px 12px;
   background: var(--bar-bg);
   border-bottom: 1px solid var(--border);
   z-index: 50;
@@ -69,6 +95,8 @@ html, body {
 }
 
 .gp-bar.hidden {
+  /* 只平移不影响布局：画布会一直留着那条空档。隐藏时退出布局流，手柄区向上补位。 */
+  position: absolute; top: 0; left: 0; right: 0;
   transform: translateY(-100%);
   opacity: 0;
   pointer-events: none;
@@ -140,6 +168,82 @@ html, body {
   background: var(--green);
   color: #000;
   border-color: var(--green);
+}
+.gp-bar-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* 开关按钮：右侧明确标出「开 / 关」，不让玩家猜颜色代表什么。 */
+.gp-bar-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.gp-bar-toggle-state {
+  font-size: 10px; font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  line-height: 1.5;
+}
+.gp-bar-toggle.on {
+  border-color: var(--green);
+  color: var(--green);
+}
+.gp-bar-toggle.on .gp-bar-toggle-state {
+  background: var(--green);
+  color: #000;
+}
+.gp-bar-toggle.off {
+  color: var(--text-dim);
+}
+.gp-bar-toggle.off .gp-bar-toggle-state {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-dim);
+}
+
+/* 按键显隐列表右侧的状态文字 */
+.gp-vis-state {
+  font-size: 11px; font-weight: 600;
+  color: var(--text-dim);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* 顶栏里的紧凑下拉框（配置方案 / 按键风格） */
+.gp-bar-select {
+  background: #0a0a0f;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  max-width: 130px;
+  transition: border-color 0.15s;
+}
+.gp-bar-select:focus { border-color: var(--green); }
+
+/* 顶栏里的灵敏度滑杆 */
+.gp-bar-slider {
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer;
+}
+.gp-bar-slider-label {
+  font-size: 11px; font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+/* 滑杆右侧的实时数值 */
+.gp-bar-slider-value {
+  font-size: 11px; font-weight: 700;
+  color: var(--text);
+  min-width: 34px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.gp-bar-slider input[type="range"] {
+  width: 80px;
+  accent-color: var(--green);
+  cursor: pointer;
 }
 
 /* ═══════ Menu Dropdown ═══════ */
@@ -245,6 +349,7 @@ html, body {
   font-size: 14px; font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
+  white-space: nowrap;
 }
 .gp-mbtn:active { transform: scale(0.96); }
 .gp-mbtn.green { background: var(--green); color: #000; border-color: var(--green); }
@@ -814,6 +919,7 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .gp-edit-action.reset {
@@ -881,12 +987,12 @@ html, body {
 @media (max-width: 480px) {
   .gp-joy { width: 100px; height: 100px; }
   .gp-joy-knob { width: 40px; height: 40px; }
-  .gp-bar { height: 36px; min-height: 36px; gap: 6px; padding: 0 8px; }
+  .gp-bar { min-height: 36px; gap: 6px; padding: 4px 8px; }
   .gp-bar-btn { padding: 3px 8px; font-size: 11px; }
 }
 
 @media (max-height: 450px) {
-  .gp-bar { height: 32px; min-height: 32px; }
+  .gp-bar { min-height: 32px; padding: 2px 8px; }
   .gp-bar-status { display: none; }
   
   .gp-edit-bar {
@@ -928,4 +1034,223 @@ html, body {
     padding: 4px 8px;
     font-size: 10px;
   }
+}
+
+/* ═══════ Slot Picker ═══════ */
+.gp-slot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gp-slot {
+  padding: 16px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+
+/* 上次坐过的槽位：描边 + 角标，方便一眼认出来并一键接回。 */
+.gp-slot.last:not(:disabled) { border-color: rgba(34, 197, 94, 0.55); }
+
+.gp-slot-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.16);
+  color: var(--green);
+}
+
+.gp-slot-reconnect { margin-bottom: 12px; }
+
+.gp-slot:not(:disabled):hover { border-color: var(--green); }
+.gp-slot:not(:disabled):active { transform: scale(0.96); }
+.gp-slot.you { border-color: var(--blue); color: var(--blue); }
+.gp-slot:disabled { opacity: 0.4; cursor: default; }
+
+.gp-slot-hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* ═══════ Connection Gate (未连接时的全屏覆盖层) ═══════ */
+.gp-gate {
+  position: fixed; inset: 0;
+  z-index: 500;
+  /* 用 align-items:center + 高度溢出时会把面板顶部顶出视口（滚也滚不回来），
+     改成 flex-start + 面板自身 margin:auto：装得下就居中，装不下就从顶部开始滚。 */
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 20px;
+  background: radial-gradient(circle at 50% 30%, #14142a 0%, #08080f 70%);
+  overflow-y: auto;
+}
+
+.gp-gate-panel {
+  width: 100%;
+  max-width: 420px;
+  background: #111118;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 26px 22px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  margin: auto 0;
+}
+
+.gp-gate-title {
+  font-size: 20px; font-weight: 800;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.gp-gate-hint {
+  margin: -12px 0 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.gp-gate-notice {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  background: rgba(239,68,68,0.12);
+  color: #fecaca;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.gp-gate-label {
+  display: block;
+  font-size: 12px; font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.gp-gate-check {
+  display: flex; align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.gp-gate-panel .gp-input { margin-bottom: 16px; }
+
+/* 语言下拉框：语言一多，按钮排不下。 */
+.gp-gate-lang {
+  width: auto;
+  min-width: 130px;
+  margin-bottom: 0 !important;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* 手柄类型下拉：整行铺满，字体跟界面走（.gp-input 是等宽的，给数字用）。 */
+.gp-gate-type {
+  display: block;
+  width: 100%;
+  background: #0a0a0f;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+.gp-gate-type:focus { border-color: var(--green); }
+
+.gp-gate-connect {
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+
+.gp-gate-row {
+  display: flex; flex-wrap: wrap;
+  align-items: center; justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.gp-gate-small {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.gp-gate-small:active { transform: scale(0.96); }
+.gp-gate-small.active {
+  background: rgba(59,130,246,0.14);
+  color: var(--blue);
+  border-color: rgba(59,130,246,0.4);
+}
+
+.gp-gate-langs {
+  display: flex; flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ═══════ Notice toast ═══════ */
+.gp-notice {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: 90vw;
+  padding: 12px 18px;
+  border: 1px solid var(--red);
+  border-radius: 10px;
+  background: rgba(17, 17, 24, 0.96);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 300;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+
+/* ═══════ Responsive: 连接门 ═══════
+   必须放在 .gp-gate 基础样式之后：同一优先级下，后出现的规则才赢。 */
+@media (max-height: 450px) {
+  /* 横屏手机高度只有 300–400px：连接门竖排铺会溢出视口，压紧并把两项下拉并排。 */
+  .gp-gate {
+    padding: 10px;
+  }
+  .gp-gate-panel {
+    padding: 12px 14px;
+  }
+  .gp-gate-title { font-size: 15px; margin-bottom: 8px; }
+  .gp-gate-hint { margin: 0 0 8px; font-size: 11px; }
+  .gp-gate-label { margin-bottom: 3px; font-size: 11px; }
+  .gp-gate-panel .gp-input { margin-bottom: 8px; }
+  .gp-gate-type { margin-bottom: 8px; padding: 7px 10px; }
+  .gp-gate-connect { margin-bottom: 8px; }
+  .gp-gate-row { padding-top: 8px; }
 }

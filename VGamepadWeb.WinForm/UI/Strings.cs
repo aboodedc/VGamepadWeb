@@ -1,0 +1,209 @@
+using System;
+using System.Collections.Generic;
+
+namespace VGamepadWeb.WinForm.UI
+{
+    /// <summary>
+    /// 界面文案的唯一出处（doc/01：文案集中取，不许散落字面量）。
+    /// 中文/英文/阿拉伯文一一对应；缺键时回退到键名，方便一眼看出漏了哪条。
+    /// </summary>
+    public static class Strings
+    {
+        private static readonly Dictionary<string, (string Zh, string En, string Ar)> Map =
+            new Dictionary<string, (string, string, string)>(StringComparer.Ordinal)
+            {
+                // 电源与状态
+                ["power.start"] = ("启动服务", "Start", "تشغيل الخدمة"),
+                ["power.stop"] = ("停止服务", "Stop", "إيقاف الخدمة"),
+                ["power.starting"] = ("启动中…", "Starting…", "جارٍ التشغيل…"),
+                ["power.stopping"] = ("停止中…", "Stopping…", "جارٍ الإيقاف…"),
+                ["state.running"] = ("服务运行中", "Service running", "الخدمة قيد التشغيل"),
+                ["state.stopped"] = ("服务已停止", "Service stopped", "الخدمة متوقفة"),
+                ["state.starting"] = ("服务启动中", "Service starting", "الخدمة قيد البدء"),
+                ["state.stopping"] = ("服务停止中", "Service stopping", "الخدمة قيد الإيقاف"),
+                ["state.stoppedHint"] = ("启动后手机即可连接", "Start to let phones connect", "شغّل الخدمة ليتصل الهاتف"),
+                ["uptime"] = ("已运行 {0}", "up {0}", "مدة التشغيل {0}"),
+
+                // 地址与设置
+                ["addr.title"] = ("手机访问地址 · 在手机浏览器中输入", "Phone address · open in mobile browser", "عنوان الهاتف · افتحه في متصفح الهاتف"),
+                ["addr.hint"] = ("手机与电脑需连接同一 Wi-Fi / 局域网", "Phone and PC must share the same Wi-Fi / LAN.", "يجب أن يتصل الهاتف والكمبيوتر بنفس شبكة Wi-Fi / LAN."),
+                ["addr.copy"] = ("复制地址", "Copy", "نسخ العنوان"),
+                ["addr.port"] = ("服务器端口", "Port", "منفذ الخادم"),
+                ["addr.password"] = ("访问密码", "Password", "كلمة المرور"),
+                ["addr.show"] = ("显示", "Show", "إظهار"),
+                ["addr.hide"] = ("隐藏", "Hide", "إخفاء"),
+                ["config.title"] = ("配置", "Settings", "الإعدادات"),
+                ["lang.label"] = ("界面语言", "Language", "لغة الواجهة"),
+                ["status.online"] = ("{0} 台设备在线 · 局域网可达", "{0} devices online · reachable on LAN", "{0} جهاز متصل · متاح عبر الشبكة المحلية"),
+
+                // 槽位
+                ["slot.section"] = ("手柄槽位", "Controller slots", "خانات ذراع التحكم"),
+                ["slot.player"] = ("手柄 {0}", "Controller {0}", "ذراع التحكم {0}"),
+                ["slot.onlineSuffix"] = ("已连接", "connected", "متصل"),
+                ["slot.waiting"] = ("等待设备重连", "Waiting for reconnect", "في انتظار إعادة الاتصال"),
+                ["slot.waitingDevice"] = ("等待设备接入", "Waiting for a device", "في انتظار جهاز"),
+                ["slot.connected"] = ("已连接", "Connected", "متصل"),
+                ["slot.idle"] = ("空闲", "Idle", "متاح"),
+                ["slot.disconnect"] = ("断开连接", "Disconnect", "قطع الاتصال"),
+                ["slot.delete"] = ("卸载", "Uninstall", "إزالة"),
+                ["type.xbox"] = ("Xbox 360 手柄", "Xbox 360 controller", "ذراع تحكم Xbox 360"),
+                ["type.ds4"] = ("DualShock 4 手柄", "DualShock 4 controller", "ذراع تحكم DualShock 4"),
+                ["layout.xbox"] = ("XInput", "XInput", "XInput"),
+                ["layout.ds4"] = ("PS4 布局", "PS4 layout", "تخطيط PS4"),
+
+                // 二维码与页脚
+                ["qr.hint.stop"] = ("启动服务后可扫码", "Available once running", "متاح بعد تشغيل الخدمة"),
+                ["tray.show"] = ("显示窗口", "Show window", "إظهار النافذة"),
+                ["tray.exit"] = ("退出", "Exit", "خروج"),
+                ["tray.minimized.title"] = ("VGamepadWeb 仍在运行", "VGamepadWeb is still running", "VGamepadWeb لا يزال قيد التشغيل"),
+                ["tray.minimized.text"] = ("已最小化到通知区域，服务保持运行。点托盘图标即可恢复窗口。", "Minimized to the notification area — the server keeps running. Click the tray icon to reopen.", "تم التصغير إلى منطقة الإشعارات — الخادم يعمل. اضغط أيقونة شريط النظام لاستعادة النافذة."),
+
+                // 系统弹窗（驱动缺失等）
+                ["dialog.driverMissing.title"] = ("运行环境错误", "Runtime error", "خطأ في بيئة التشغيل"),
+                ["dialog.driverMissing.text"] = ("本应用需要 ViGEmBus 驱动才能正常工作，程序即将关闭。", "VGamepadWeb needs the ViGEmBus driver to work. The app will close now.", "يتطلب VGamepadWeb تعريف ViGEmBus ليعمل. سيتم إغلاق التطبيق الآن."),
+                ["dialog.driverInstallFailed.title"] = ("系统错误", "System error", "خطأ في النظام"),
+                ["dialog.driverInstallFailed.text"] = ("驱动自动安装失败：{0}", "Failed to install the driver automatically: {0}", "فشل التثبيت التلقائي للتعريف: {0}"),
+                ["dialog.alreadyRunning.title"] = ("已经在运行", "Already running", "يعمل بالفعل"),
+                ["dialog.alreadyRunning.text"] = ("VGamepadWeb 已经有一个实例在运行，去通知区域找它的图标。", "VGamepadWeb is already running — look for its icon in the notification area.", "VGamepadWeb يعمل بالفعل — ابحث عن أيقونته في شريط النظام."),
+
+                // 反馈（toast）
+                ["toast.copied"] = ("已复制 {0}", "Copied {0}", "تم نسخ {0}"),
+                ["toast.noIp"] = ("本机没有可用的 IPv4 地址", "No IPv4 address available", "لا يوجد عنوان IPv4 متاح"),
+                ["toast.copyFailed"] = ("复制失败：{0}", "Copy failed: {0}", "فشل النسخ: {0}"),
+                ["toast.portInvalid"] = ("端口必须在 1-65535 之间", "Port must be between 1 and 65535", "يجب أن يكون المنفذ بين 1 و 65535"),
+                ["toast.startFailed"] = ("启动失败：{0}", "Start failed: {0}", "فشل التشغيل: {0}"),
+                ["toast.selfCheckFailed"] = ("启动自检未通过：{0}", "Startup self-check failed: {0}", "فشل الفحص الذاتي عند البدء: {0}"),
+                ["toast.stopFailed"] = ("停止失败：{0}", "Stop failed: {0}", "فشل الإيقاف: {0}"),
+                ["toast.settingsSaved"] = ("设置已保存", "Settings saved", "تم حفظ الإعدادات"),
+                ["toast.settingsLocked"] = ("服务运行中不能修改端口或密码，请先停止服务", "Stop the service before changing port or password", "أوقف الخدمة قبل تغيير المنفذ أو كلمة المرور"),
+                ["toast.slotBusy"] = ("槽位 {0} 正在使用，先断开设备再卸载", "Slot {0} is in use — disconnect first", "الخانة {0} مستخدمة — اقطع الاتصال أولًا"),
+                ["toast.deviceRemoved"] = ("已卸载槽位 {0} 的设备", "Removed the device on slot {0}", "تمت إزالة جهاز الخانة {0}"),
+                ["toast.slotInvalid"] = ("无效的槽位", "Invalid slot", "خانة غير صالحة"),
+                ["toast.notRunning"] = ("服务未运行", "Service is not running", "الخدمة ليست قيد التشغيل"),
+                ["toast.noDevice"] = ("槽位 {0} 没有已连接的设备", "Slot {0} has no device", "لا يوجد جهاز متصل في الخانة {0}"),
+                ["toast.kickOk"] = ("已踢出槽位 {0} 的连接", "Kicked the connection on slot {0}", "تم قطع الاتصال في الخانة {0}"),
+                ["toast.saveFailed"] = ("设置保存失败：无法写入 {0}", "Could not write {0}", "تعذر حفظ الإعدادات: تعذرت الكتابة في {0}")
+            };
+
+        /// <summary>取一条文案；lang 不是 en / ar 时一律按中文处理。</summary>
+        public static string T(string lang, string key)
+        {
+            if (!Map.TryGetValue(key, out var triple))
+            {
+                return key;
+            }
+
+            if (string.Equals(lang, Languages.English, StringComparison.OrdinalIgnoreCase))
+            {
+                return triple.En;
+            }
+
+            if (string.Equals(lang, Languages.Arabic, StringComparison.OrdinalIgnoreCase))
+            {
+                return triple.Ar;
+            }
+
+            return triple.Zh;
+        }
+
+        public static string T(string lang, string key, params object[] args)
+        {
+            string format = T(lang, key);
+            try
+            {
+                return string.Format(format, args);
+            }
+            catch (FormatException)
+            {
+                return format;
+            }
+        }
+
+        public static string TypeLabel(string lang, string type)
+        {
+            return T(lang, "type." + NormalizeType(type));
+        }
+
+        public static string TypeLayout(string lang, string type)
+        {
+            return T(lang, "layout." + NormalizeType(type));
+        }
+
+        /// <summary>语言自身名字不随界面语言变化，下拉菜单直接用这个。</summary>
+        public static string LanguageName(string code)
+        {
+            if (string.Equals(code, Languages.English, StringComparison.OrdinalIgnoreCase))
+            {
+                return "English";
+            }
+
+            if (string.Equals(code, Languages.Arabic, StringComparison.OrdinalIgnoreCase))
+            {
+                return "العربية";
+            }
+
+            return "中文";
+        }
+
+        /// <summary>
+        /// 该语言是否从右往左读。
+        /// 阿语是 RTL：文字要贴右排，布局也要镜像。
+        /// </summary>
+        public static bool IsRtl(string lang)
+        {
+            return string.Equals(lang, Languages.Arabic, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 给一段文案套上 Unicode 方向标记（U+202B RLE + U+202C PDF）。
+        ///
+        /// 用在哪：Windows 通知气泡这类由系统渲染的界面。气泡的排版方向取决于
+        /// Windows 自己的语言设置，应用没法直接指定 —— 方向标记是唯一的办法：
+        /// 它把这段文字显式标成「从右往左」，系统就会按阿语排。
+        ///
+        /// 标记本身不占位也不画出笔画（实测 GDI+ 与 TextRenderer 的墨迹量完全相同），
+        /// 所以加不加在视觉上只差排版方向。
+        /// </summary>
+        public static string WithDirectionMarks(string text, string lang)
+        {
+            if (string.IsNullOrEmpty(text) || !IsRtl(lang))
+            {
+                return text;
+            }
+
+            return "\u202B" + text + "\u202C";
+        }
+
+        private static string NormalizeType(string type)
+        {
+            return string.Equals(type, "ds4", StringComparison.OrdinalIgnoreCase) ? "ds4" : "xbox";
+        }
+
+        public static string IpLabel(string lang, string kind)
+        {
+            if (string.Equals(lang, Languages.Arabic, StringComparison.OrdinalIgnoreCase))
+            {
+                switch (kind)
+                {
+                    case "wifi":
+                        return "Wi-Fi";
+                    case "ethernet":
+                        return "إيثرنت";
+                    default:
+                        return "أخرى";
+                }
+            }
+
+            bool en = string.Equals(lang, Languages.English, StringComparison.OrdinalIgnoreCase);
+            switch (kind)
+            {
+                case "wifi":
+                    return "Wi-Fi";
+                case "ethernet":
+                    return en ? "Ethernet" : "以太网";
+                default:
+                    return en ? "Other" : "其它";
+            }
+        }
+    }
+}
