@@ -43,6 +43,7 @@ export const useGamepadConnection = ({
   const [controllerId, setControllerId] = useState<number | null>(null);
   const [slots, setSlots] = useState<SlotInfo[] | null>(null);
   const [slotSelecting, setSlotSelecting] = useState(false);
+  const [recommended, setRecommended] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const connRef = useRef<signalR.HubConnection | null>(null);
@@ -93,6 +94,7 @@ export const useGamepadConnection = ({
     }
     setSlots(null);
     setSlotSelecting(false);
+    setRecommended(null);
   };
 
   const updateLiveSetting = (key: string, val: string) => {
@@ -161,6 +163,17 @@ export const useGamepadConnection = ({
         }
       }
     };
+  };
+
+  // 服务端记得「这个设备码上次坐的是哪个槽」，拿回来在选槽面板里标出来，方便一键接回。
+  const refreshRecommended = async (c: signalR.HubConnection) => {
+    try {
+      const slot = await c.invoke<number | null>('RecommendSlot', getClientId());
+      if (connRef.current === c) setRecommended(typeof slot === 'number' ? slot : null);
+    } catch {
+      // 老服务端没有这个方法：退化成不推荐。
+      setRecommended(null);
+    }
   };
 
   // 第一步：只建 SignalR 连接，拿到服务端推来的槽位列表后等用户选槽。
@@ -233,6 +246,7 @@ export const useGamepadConnection = ({
       connRef.current = c;
       setConnStatus('ing');
       setSlotSelecting(true);
+      void refreshRecommended(c);
     } catch (err) {
       console.error(err);
       setSlotSelecting(false);
@@ -306,7 +320,7 @@ export const useGamepadConnection = ({
   }, []);
 
   return {
-    connStatus, latency, controllerId, slots, slotSelecting, notice,
+    connStatus, latency, controllerId, slots, slotSelecting, recommended, notice,
     connect, selectSlot, disconnect, dismissNotice: () => setNotice(null),
     sendButton, sendJoystick
   };

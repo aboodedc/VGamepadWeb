@@ -53,21 +53,12 @@ namespace VGamepadWeb.Core
                 return;
             }
 
-            // 身份只用于「优先认领自己用过的槽位」：新客户端传 clientId，旧客户端退回远程 IP。
-            string? identity;
-            if (!string.IsNullOrEmpty(clientId))
-            {
-                identity = "id:" + clientId;
-            }
-            else
-            {
-                var remoteIp = Context.GetHttpContext()?.Connection.RemoteIpAddress;
-                identity = remoteIp == null ? null : "ip:" + remoteIp;
-            }
+            // 身份只用于「优先认领自己上次的槽位」：设备码（clientId）优先，拿不到就退回远程 IP。
+            string? remoteIp = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString();
 
             // 占位必须在 WebRTC 协商之前：占不到就回稳定码并停手，绝不建立 DataChannel。
             if (!_gamepadManager.TryClaimSlot(
-                    Context.ConnectionId, slot, identity, enableVib, sensitivity,
+                    Context.ConnectionId, slot, clientId, remoteIp, enableVib, sensitivity,
                     out int slotIndex, out string reason))
             {
                 Console.WriteLine($"[Slot] Refused {Context.ConnectionId}: {reason}");
@@ -77,6 +68,16 @@ namespace VGamepadWeb.Core
 
             Console.WriteLine($"[Slot] {Context.ConnectionId} -> slot {slotIndex}");
             await _rtcManager.StartConnectionAsync(Context.ConnectionId, sdpOffer);
+        }
+
+        /// <summary>
+        /// 这个连接上次坐的是哪个槽（0-based）。手机端拿它把上次的槽位标出来，一键接回去。
+        /// 只读查询，不含认证信息：设备码是客户端自己声明的，本来就只用于「默认建议槽号」。
+        /// </summary>
+        public int? RecommendSlot(string clientId)
+        {
+            string? remoteIp = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString();
+            return _gamepadManager.GetRecommendedSlot(clientId, remoteIp);
         }
 
         /// <summary>页面关闭时前端尽力而为地调一次；服务端 OnDisconnectedAsync 仍会兜底。</summary>

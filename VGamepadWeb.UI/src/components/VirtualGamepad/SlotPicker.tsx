@@ -6,21 +6,34 @@ interface SlotPickerProps {
   open: boolean;
   slots: SlotInfo[] | null;
   mySlot: number | null;
+  recommended: number | null;
   onSelect: (slot: number) => void;
   onCancel: () => void;
 }
 
-export const SlotPicker: React.FC<SlotPickerProps> = ({ open, slots, mySlot, onSelect, onCancel }) => {
+export const SlotPicker: React.FC<SlotPickerProps> = ({ open, slots, mySlot, recommended, onSelect, onCancel }) => {
   const { t } = useLanguage();
   if (!open) return null;
 
   const label = (slot: number, state: string) =>
     t.slotLabel.replace('{num}', String(slot + 1)).replace('{state}', state);
 
+  const canTake = (slot: number) => {
+    const info = (slots ?? []).find(s => s.slot === slot);
+    return !!info && !info.occupied && !info.locked;
+  };
+
+  const reconnectSlot = recommended !== null && canTake(recommended) ? recommended : null;
+
   return (
     <div className="gp-overlay" onClick={onCancel}>
       <div className="gp-modal" onClick={e => e.stopPropagation()}>
         <h3>{t.slotTitle}</h3>
+        {reconnectSlot !== null && (
+          <button className="gp-mbtn green gp-slot-reconnect" onClick={() => onSelect(reconnectSlot)}>
+            {t.slotReconnect.replace('{num}', String(reconnectSlot + 1))}
+          </button>
+        )}
         <div className="gp-slot-grid">
           {(slots ?? []).map(s => {
             const isYou = mySlot !== null && mySlot === s.slot;
@@ -29,11 +42,12 @@ export const SlotPicker: React.FC<SlotPickerProps> = ({ open, slots, mySlot, onS
             return (
               <button
                 key={s.slot}
-                className={`gp-slot ${isYou ? 'you' : ''}`}
+                className={`gp-slot ${isYou ? 'you' : ''} ${s.slot === recommended ? 'last' : ''}`}
                 disabled={!selectable}
                 onClick={() => onSelect(s.slot)}
               >
                 {label(s.slot, state)}
+                {s.slot === recommended && <span className="gp-slot-badge">{t.slotLast}</span>}
               </button>
             );
           })}

@@ -54,6 +54,8 @@ const ar = {
     slotOccupied: 'مشغول',
     slotLocked: 'مقفل',
     slotYou: 'أنت',
+    slotLast: 'السابق',
+    slotReconnect: 'العودة إلى مقعدك السابق ({num})',
     slotLabel: '{num} · {state}',
 
     // Stable reason codes from the server
@@ -151,6 +153,8 @@ const en = {
     slotOccupied: 'In use',
     slotLocked: 'Locked',
     slotYou: 'You',
+    slotLast: 'Last',
+    slotReconnect: 'Back to your last slot ({num})',
     slotLabel: 'Slot {num} · {state}',
 
     // Stable reason codes from the server
@@ -251,6 +255,8 @@ const zh = {
   slotOccupied: '占用中',
   slotLocked: '锁定',
   slotYou: '你',
+  slotLast: '上次',
+  slotReconnect: '回到上次槽位（{num}号）',
   slotLabel: '{num}号 · {state}',
 
   // Stable reason codes from the server

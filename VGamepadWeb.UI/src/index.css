@@ -951,7 +951,22 @@ html, body {
   white-space: nowrap;
   cursor: pointer;
   transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
 }
+
+/* 上次坐过的槽位：描边 + 角标，方便一眼认出来并一键接回。 */
+.gp-slot.last:not(:disabled) { border-color: rgba(34, 197, 94, 0.55); }
+
+.gp-slot-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.16);
+  color: var(--green);
+}
+
+.gp-slot-reconnect { margin-bottom: 12px; }
 
 .gp-slot:not(:disabled):hover { border-color: var(--green); }
 .gp-slot:not(:disabled):active { transform: scale(0.96); }

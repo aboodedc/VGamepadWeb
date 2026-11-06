@@ -49,7 +49,7 @@ const VirtualGamepadInner: React.FC = () => {
 
   const actualServerUrl = useSameServer ? window.location.origin : serverUrl;
   const {
-    connStatus, latency, controllerId, slots, slotSelecting, notice,
+    connStatus, latency, controllerId, slots, slotSelecting, recommended, notice,
     connect, selectSlot, disconnect, dismissNotice, sendButton, sendJoystick
   } = useGamepadConnection({
     serverUrl: actualServerUrl, serverPassword, enableVib, sensitivity, t
@@ -248,6 +248,7 @@ const VirtualGamepadInner: React.FC = () => {
         open={slotSelecting}
         slots={slots}
         mySlot={controllerId}
+        recommended={recommended}
         onSelect={selectSlot}
         onCancel={disconnect}
       />

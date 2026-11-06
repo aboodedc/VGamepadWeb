@@ -59,8 +59,12 @@ namespace VGamepadWeb.Core
             public string Name = string.Empty;
             public bool Locked;
             public string? OwnerConnectionId;
-            // 谁占用过这个槽位（"id:xxx" 或 "ip:x.x.x.x"）。断开时保留，重连才能认回同一台设备。
-            public string? Identity;
+
+            // 「上一次是谁坐在这个槽位上」。断开不清，重连才能认回同一台设备。
+            // 只在本次进程里记（每次运行单独记录），服务重启就没了。
+            // ClientId 是手机端 localStorage 里持久化的设备码，比 IP 稳；IP 是拿不到设备码时的退路。
+            public string? ClientId;
+            public string? RemoteIp;
         }
 
         public event Action<string, byte, byte> OnVibrationReceived;
@@ -164,13 +168,15 @@ namespace VGamepadWeb.Core
 
         /// <summary>
         /// 占用槽位。必须在 WebRTC 协商之前调用：占不到就直接拒，别让客户端进入协商。
-        /// 指定槽位：必须空闲且未锁定；不指定（老客户端）：身份命中 → 干净槽 → 最小空闲，均跳过锁定槽。
+        /// 指定槽位：必须空闲且未锁定（用户自己选的，优先尊重）；
+        /// 不指定：设备码命中 → IP 命中 → 从未被分配过的干净槽 → 最小空闲，全部跳过锁定槽。
         /// 失败时 reason 是稳定码，客户端负责翻译：slot_invalid / slot_taken / slot_locked / no_free_slot。
         /// </summary>
         public bool TryClaimSlot(
             string connectionId,
             int? requestedSlot,
-            string? identity,
+            string? clientId,
+            string? remoteIp,
             bool enableVib,
             int sensitivity,
             out int slotIndex,
@@ -218,12 +224,15 @@ namespace VGamepadWeb.Core
                 }
                 else
                 {
-                    // 第一级：按身份找回自己用过的槽位（空闲且 Identity 相同）。
-                    if (!string.IsNullOrEmpty(identity))
+                    // 第一、二级：认回「上次就是我」的空闲槽（设备码优先，IP 兜底）。
+                    assigned = FindOwnedFreeSlot(clientId, remoteIp);
+
+                    // 第三级：给新用户一个从未被分配过的干净槽位，不去占别人留下的位置。
+                    if (assigned == -1)
                     {
                         for (int i = 0; i < _slots.Length; i++)
                         {
-                            if (_slots[i].OwnerConnectionId == null && !_slots[i].Locked && _slots[i].Identity == identity)
+                            if (IsFree(i) && string.IsNullOrEmpty(_slots[i].ClientId) && string.IsNullOrEmpty(_slots[i].RemoteIp))
                             {
                                 assigned = i;
                                 break;
@@ -231,25 +240,12 @@ namespace VGamepadWeb.Core
                         }
                     }
 
-                    // 第二级：给新人一个从未被认领过的干净槽位，不去抢别人留下的占位。
+                    // 第四级：所有槽位都被人用过，才去占曾用过但已空闲的位。
                     if (assigned == -1)
                     {
                         for (int i = 0; i < _slots.Length; i++)
                         {
-                            if (_slots[i].OwnerConnectionId == null && !_slots[i].Locked && string.IsNullOrEmpty(_slots[i].Identity))
-                            {
-                                assigned = i;
-                                break;
-                            }
-                        }
-                    }
-
-                    // 第三级：兜底取最小空闲槽位（4 格都曾被认领过时才会到这里）。
-                    if (assigned == -1)
-                    {
-                        for (int i = 0; i < _slots.Length; i++)
-                        {
-                            if (_slots[i].OwnerConnectionId == null && !_slots[i].Locked)
+                            if (IsFree(i))
                             {
                                 assigned = i;
                                 break;
@@ -273,9 +269,16 @@ namespace VGamepadWeb.Core
                 }
 
                 slot.OwnerConnectionId = connectionId;
-                if (!string.IsNullOrEmpty(identity))
+
+                // 记下这次是谁坐的：设备码优先，IP 一起记，老客户端没设备码时靠 IP 认人。
+                if (!string.IsNullOrEmpty(clientId))
                 {
-                    slot.Identity = identity;
+                    slot.ClientId = clientId;
+                }
+
+                if (!string.IsNullOrEmpty(remoteIp))
+                {
+                    slot.RemoteIp = remoteIp;
                 }
 
                 _controllers[connectionId] = new GamepadSettings(
@@ -297,6 +300,56 @@ namespace VGamepadWeb.Core
             Console.WriteLine($"[Manager] Assigned Controller ID: {slotIndex} to Player: {connectionId}");
             RaiseSlotsChanged();
             return true;
+        }
+
+        /// <summary>空闲 = 没人占用且没被锁定。</summary>
+        private bool IsFree(int slot)
+        {
+            return _slots[slot].OwnerConnectionId == null && !_slots[slot].Locked;
+        }
+
+        /// <summary>
+        /// 找回「上次是我」的空闲槽：先按设备码，再按 IP。只认本次运行期内的记录。
+        /// 调用方必须已持有 _indexLock。
+        /// </summary>
+        private int FindOwnedFreeSlot(string? clientId, string? remoteIp)
+        {
+            if (!string.IsNullOrEmpty(clientId))
+            {
+                for (int i = 0; i < _slots.Length; i++)
+                {
+                    if (IsFree(i) && string.Equals(_slots[i].ClientId, clientId, StringComparison.Ordinal))
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(remoteIp))
+            {
+                for (int i = 0; i < _slots.Length; i++)
+                {
+                    if (IsFree(i) && string.Equals(_slots[i].RemoteIp, remoteIp, StringComparison.Ordinal))
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// 只读查询：这个连接「上次坐的是哪个槽」。手机端用它把上次的槽位标出来，方便一键接回去。
+        /// 没有记录或那个槽已被占/被锁 → null。
+        /// </summary>
+        public int? GetRecommendedSlot(string? clientId, string? remoteIp)
+        {
+            lock (_indexLock)
+            {
+                int slot = FindOwnedFreeSlot(clientId, remoteIp);
+                return slot == -1 ? null : slot;
+            }
         }
 
         /// <summary>
