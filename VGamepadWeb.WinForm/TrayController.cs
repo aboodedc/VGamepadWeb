@@ -34,7 +34,8 @@ namespace VGamepadWeb.WinForm
             _showItem = new ToolStripMenuItem(Strings.T(language, "tray.show"), null, (_, _) => showWindow());
             _exitItem = new ToolStripMenuItem(Strings.T(language, "tray.exit"), null, (_, _) => exit());
 
-            var menu = new ContextMenuStrip();
+            // 托盘菜单没有图标，关掉左侧图标边距：那一列默认是浅色渐变，暗色主题下会留一条白带。
+            var menu = new ContextMenuStrip { ShowImageMargin = false, Renderer = new ThemeMenuRenderer() };
             menu.Items.Add(_showItem);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(_exitItem);

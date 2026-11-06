@@ -6,7 +6,7 @@ namespace VGamepadWeb.WinForm
 {
     /// <summary>
     /// 桌面端设置的唯一模型，落盘到 %APPDATA%\VGamepadWeb\settings.json。
-    /// 内容是端口 / 密码 / 语言；槽位配置整体取消 —— 设备类型由客户端自己选，
+    /// 内容是端口 / 密码 / 语言 / 主题；槽位配置整体取消 —— 设备类型由客户端自己选，
     /// 槽位也由服务端自动分配，桌面端不再有可配的槽位项。
     /// 读写全部走「临时文件 + Move 覆盖」：写一半崩掉不会留下半个 JSON。
     /// </summary>
@@ -25,8 +25,17 @@ namespace VGamepadWeb.WinForm
 
         public string Password { get; set; } = string.Empty;
 
-        /// <summary>界面语言，取值来自 UI.Languages。</summary>
-        public string Language { get; set; } = Languages.Chinese;
+        /// <summary>界面语言，取值来自 UI.Languages。空 = 还没选过，启动时按系统语言决定。</summary>
+        public string Language { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 主题选择："light" / "dark"；空 = 还没手动切过，启动时跟随系统。
+        /// 刻意不用旧的 darkMode 字段名：那个值多半是别的设置持久化时顺手带上的，不是真的选过。
+        /// </summary>
+        public string ThemeMode { get; set; } = string.Empty;
+
+        public const string ThemeLight = "light";
+        public const string ThemeDark = "dark";
 
         public static string SettingsDirectory => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -44,7 +53,7 @@ namespace VGamepadWeb.WinForm
             {
                 if (!File.Exists(SettingsPath))
                 {
-                    return new AppSettings();
+                    return Normalize(new AppSettings());
                 }
 
                 string json = File.ReadAllText(SettingsPath);
@@ -57,7 +66,7 @@ namespace VGamepadWeb.WinForm
                 // JsonException / IOException / UnauthorizedAccessException：一律按「没有可用设置」处理。
                 // 但要留痕：不然用户只会遇到「它自己把端口和密码忘了」，还查不出原因。
                 ServerLog.Warn($"设置读取失败，本次使用默认值：{ex.Message}");
-                return new AppSettings();
+                return Normalize(new AppSettings());
             }
         }
 
@@ -95,9 +104,17 @@ namespace VGamepadWeb.WinForm
                 settings.Port = 5000;
             }
 
+            // 没选过语言、或者手改坏了：按系统 UI 语言决定；没有对应语种就回英文。
             if (string.IsNullOrEmpty(settings.Language) || !Languages.All.Contains(settings.Language))
             {
-                settings.Language = Languages.Chinese;
+                settings.Language = Languages.FromSystem();
+            }
+
+            // 主题只认两个值，其余（含手改坏的）一律回到「跟随系统」。
+            if (!string.Equals(settings.ThemeMode, ThemeDark, StringComparison.Ordinal) &&
+                !string.Equals(settings.ThemeMode, ThemeLight, StringComparison.Ordinal))
+            {
+                settings.ThemeMode = string.Empty;
             }
 
             return settings;

@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using QRCoder;
 using VGamepadWeb.Core;
 using VGamepadWeb.WinForm.UI;
@@ -57,6 +58,9 @@ namespace VGamepadWeb.WinForm
 
         public Form1()
         {
+            // 主题必须在控件创建之前定下来：ConsoleView 构造时就按 Theme 取底色和文字色。
+            Theme.UseTheme(ResolveDarkTheme());
+
             InitializeComponent();
 
             _server.OnControllerIdAssigned += HandlePlayerConnected;
@@ -69,6 +73,7 @@ namespace VGamepadWeb.WinForm
             console.LanguageChanged += OnLanguageChanged;
             console.DisconnectSlot += OnDisconnectSlot;
             console.RemoveDevice += OnRemoveDevice;
+            console.ToggleTheme += OnToggleTheme;
 
             _tray = new TrayController(this, ShowFromTray, ExitApplication, _settings.Language);
 
@@ -106,6 +111,8 @@ namespace VGamepadWeb.WinForm
                 _tray.Dispose();
             };
 
+            BackColor = Theme.Page;
+            ApplyTitleBarTheme();
             RefreshUi();
         }
 
@@ -484,6 +491,36 @@ namespace VGamepadWeb.WinForm
             }
         }
 
+        /// <summary>启动主题：手动选过就用存下来的，没选过跟随系统。</summary>
+        private bool ResolveDarkTheme()
+        {
+            if (string.Equals(_settings.ThemeMode, AppSettings.ThemeDark, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (string.Equals(_settings.ThemeMode, AppSettings.ThemeLight, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return Theme.SystemPrefersDark();
+        }
+
+        /// <summary>页脚主题按钮：换配色 → 重画自绘层 → 跟上标题栏 → 落盘。</summary>
+        private void OnToggleTheme()
+        {
+            bool dark = !Theme.Dark;
+
+            Theme.UseTheme(dark);
+            _settings.ThemeMode = dark ? AppSettings.ThemeDark : AppSettings.ThemeLight;
+
+            BackColor = Theme.Page;
+            ApplyTitleBarTheme();
+            console.ApplyTheme();
+            PersistSettings();
+        }
+
         // ==========================================
         // 🎮 槽位命令
         // ==========================================
@@ -645,6 +682,40 @@ namespace VGamepadWeb.WinForm
 
             _allowExit = true;
             Close();
+        }
+
+        // ==========================================
+        // 🌗 标题栏跟随暗色：DWM 属性，系统不认识就静默跳过
+        // ==========================================
+        private const int DwmUseImmersiveDarkMode = 20;
+        private const int DwmUseImmersiveDarkModeLegacy = 19;
+
+        [DllImport("dwmapi.dll", PreserveSig = true)]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+
+        /// <summary>
+        /// Win10 20H1+ 用 20 号属性，更早的 build 只认 19。两个都不认就留系统色 ——
+        /// 为一条标题栏不值得加依赖，也不该让它把启动搞崩。
+        /// </summary>
+        private void ApplyTitleBarTheme()
+        {
+            if (!IsHandleCreated)
+            {
+                return;
+            }
+
+            int value = Theme.Dark ? 1 : 0;
+            try
+            {
+                if (DwmSetWindowAttribute(Handle, DwmUseImmersiveDarkMode, ref value, sizeof(int)) != 0)
+                {
+                    DwmSetWindowAttribute(Handle, DwmUseImmersiveDarkModeLegacy, ref value, sizeof(int));
+                }
+            }
+            catch (Exception)
+            {
+                // dwmapi 不可用：标题栏保持系统配色，其余照常。
+            }
         }
 
         // ==========================================

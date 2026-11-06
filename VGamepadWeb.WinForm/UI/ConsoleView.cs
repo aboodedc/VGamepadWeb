@@ -82,6 +82,9 @@ namespace VGamepadWeb.WinForm.UI
         public event Action<int> DisconnectSlot;
         public event Action<int> RemoveDevice;
 
+        /// <summary>页脚的主题按钮：宿主负责切 Theme 并落盘，切完回调 <see cref="ApplyTheme"/>。</summary>
+        public event Action ToggleTheme;
+
         public ConsoleView()
         {
             SetStyle(
@@ -112,6 +115,7 @@ namespace VGamepadWeb.WinForm.UI
 
             // 显隐用真的 Button，不往 TextBox 里画字：Text 由语言和状态驱动。
             _pwdToggle = CreateLinkButton();
+            StyleLinkButton(_pwdToggle);
             _pwdToggle.Click += PasswordToggleClick;
 
             _langMenu = CreateLanguageMenu();
@@ -151,6 +155,27 @@ namespace VGamepadWeb.WinForm.UI
             _paintedSignature = signature;
 
             // 这里只存引用；输入框文本/语言选择由 OnPaint → SyncInputs 统一补。
+            InvalidateFrame();
+            Invalidate();
+        }
+
+        /// <summary>
+        /// 主题切换后由宿主调用：重贴原生控件配色并整窗重画。
+        /// 自绘部分读的是 Theme.X，只要重画就自动跟上；原生 TextBox / Button 的配色是赋值快照，必须显式刷新。
+        /// </summary>
+        public void ApplyTheme()
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            BackColor = Theme.Page;
+            ForeColor = Theme.Text;
+            StyleLinkButton(_pwdToggle);
+
+            // 签名清空：下一次 Apply 的签名一定「不一样」，不会被去重逻辑吞掉。
+            _paintedSignature = null;
             InvalidateFrame();
             Invalidate();
         }
@@ -372,8 +397,6 @@ namespace VGamepadWeb.WinForm.UI
             {
                 AutoSize = false,
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Theme.Panel,
-                ForeColor = Theme.Accent,
                 TextAlign = ContentAlignment.MiddleRight,
                 Padding = new Padding(0, 0, 6, 0),
                 TabStop = false,
@@ -381,15 +404,33 @@ namespace VGamepadWeb.WinForm.UI
             };
 
             button.FlatAppearance.BorderSize = 0;
+            return button;
+        }
+
+        /// <summary>原生按钮的配色只在赋值时生效，主题切换后要重新贴一遍。</summary>
+        private static void StyleLinkButton(Button button)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            button.BackColor = Theme.Panel;
+            button.ForeColor = Theme.Accent;
             button.FlatAppearance.MouseOverBackColor = Theme.ButtonHover;
             button.FlatAppearance.MouseDownBackColor = Theme.ButtonHover;
-            return button;
         }
 
         /// <summary>语言下拉用自绘字段 + ContextMenuStrip，避开系统 ComboBox 的灰方块箭头。</summary>
         private ContextMenuStrip CreateLanguageMenu()
         {
-            ContextMenuStrip menu = new ContextMenuStrip { ShowImageMargin = false };
+            ContextMenuStrip menu = new ContextMenuStrip
+            {
+                // 勾选的是当前语言，必须留出勾区；ShowImageMargin 关着也不会把勾挤掉。
+                ShowImageMargin = false,
+                ShowCheckMargin = true,
+                Renderer = new ThemeMenuRenderer()
+            };
 
             for (int i = 0; i < Languages.All.Length; i++)
             {
@@ -424,6 +465,10 @@ namespace VGamepadWeb.WinForm.UI
         {
             Frame frame = CurrentFrame();
             string current = Lang;
+
+            // 菜单是原生控件，配色是赋值快照：每次弹出前按当前主题重贴一遍。
+            _langMenu.BackColor = Theme.Panel;
+            _langMenu.ForeColor = Theme.Text;
 
             // 阿拉伯语下菜单本身也要从右往左展开，否则语言名和勾选标记会挤在错误的一侧。
             _langMenu.RightToLeft = _rtl ? RightToLeft.Yes : RightToLeft.No;
@@ -756,7 +801,8 @@ namespace VGamepadWeb.WinForm.UI
 
         /// <summary>
         /// 字体、可编辑性、配色只在值真的变了才写，避免原生 TextBox 持续重排。
-        /// 锁定态直接禁用控件：只读（ReadOnly）仍然能选中文本、能拖出高亮，看着像还能改。
+        /// 锁定态用 ReadOnly 而不是 Enabled=false：禁用的 TextBox 由系统画死灰底、BackColor 根本不生效，
+        /// 暗色主题下那会是一块刺眼的亮斑。ReadOnly 的配色完全可控，值同样改不动。
         /// </summary>
         private static void StyleInputBox(TextBox box, Font font, bool locked)
         {
@@ -765,10 +811,9 @@ namespace VGamepadWeb.WinForm.UI
                 box.Font = font;
             }
 
-            // 禁用后由系统画灰底，这里把配色对齐到 SystemColors.Control，和自绘外壳无缝。
-            if (box.Enabled == locked)
+            if (box.ReadOnly != locked)
             {
-                box.Enabled = !locked;
+                box.ReadOnly = locked;
             }
 
             // TabStop 恒为 false：输入框只靠点击获得焦点，不参与 Tab 键遍历。
@@ -777,7 +822,7 @@ namespace VGamepadWeb.WinForm.UI
                 box.TabStop = false;
             }
 
-            Color back = locked ? SystemColors.Control : Theme.Panel;
+            Color back = locked ? Theme.DisabledBack : Theme.Panel;
             if (box.BackColor != back)
             {
                 box.BackColor = back;
@@ -947,6 +992,12 @@ namespace VGamepadWeb.WinForm.UI
             f.SlotCount = R(f, 744f, 182f, 200f, 18f);
 
             f.FooterRow = R(f, contentLeft, 548f, 400f, 16f);
+
+            // 页脚右端：主题开关（太阳 | 滑动开关 | 月亮），宽高固定，不随语言变；RTL 下整块由 R() 镜像。
+            // 88 是内容 80 + 左右各 4 的内边距，悬停底色才不会把两个图标贴到边。
+            const float themeWidth = 88f;
+            f.ThemeButton = R(f, contentRight - themeWidth, 540f, themeWidth, 26f);
+            AddHit(f, f.ThemeButton, "theme", HitAction.ToggleTheme, true);
 
             const float cardWidth = 302f;
             const float cardHeight = 140f;
@@ -1266,7 +1317,7 @@ namespace VGamepadWeb.WinForm.UI
             else
             {
                 back = hover ? Theme.GreenHover : Theme.Green;
-                fore = Color.White;
+                fore = Theme.OnGreen;
                 border = back;
             }
 
@@ -1456,8 +1507,8 @@ namespace VGamepadWeb.WinForm.UI
             bool locked = InputLocked;
             bool focused = box != null && box.Focused;
 
-            // 禁用态的背景由系统绘制，这里必须用同一个色（SystemColors.Control）才对得齐。
-            Color back = locked ? SystemColors.Control : Theme.Panel;
+            // 锁定态的外壳底色要和真 TextBox 的 ReadOnly 底色一致，否则框沿会露出两种灰。
+            Color back = locked ? Theme.DisabledBack : Theme.Panel;
             Color border = invalid
                 ? Theme.Red
                 : (focused ? Theme.Accent : Theme.Line);
@@ -1914,7 +1965,7 @@ namespace VGamepadWeb.WinForm.UI
             }
         }
 
-        /// <summary>页脚：版本号角标，不加分割线。版本号是 LTR 内容，阿语下也照样从左往右读。</summary>
+        /// <summary>页脚：左边版本号、右边主题开关，不加分割线。版本号是 LTR 内容，阿语下也照样从左往右读。</summary>
         private void DrawFooter(Graphics g, Frame f)
         {
             float s = f.Scale;
@@ -1939,6 +1990,185 @@ namespace VGamepadWeb.WinForm.UI
                     }
                 }
             }
+
+            // 页脚右侧的主题开关，圆钮位置就是当前模式。
+            DrawThemeToggle(g, f);
+        }
+
+        /// <summary>
+        /// 页脚的主题开关：太阳 | 滑动开关 | 月亮。平时没有底色，悬停时托一层圆角底。
+        /// 圆钮位置直接反映当前模式（浅色靠左、暗色靠右），RTL 下太阳和月亮换位。
+        /// </summary>
+        private void DrawThemeToggle(Graphics g, Frame f)
+        {
+            RectangleF rect = f.ThemeButton;
+            if (rect.Width <= 0f || rect.Height <= 0f)
+            {
+                return;
+            }
+
+            float s = f.Scale;
+            if (IsHover("theme"))
+            {
+                Theme.FillRoundRect(g, rect, rect.Height / 2f, Theme.ToggleBack);
+            }
+
+            float icon = Snap(18f * s);
+            float gap = Snap(6f * s);
+            float trackWidth = Snap(32f * s);
+            float trackHeight = Snap(18f * s);
+
+            float total = icon + gap + trackWidth + gap + icon;
+            float left = rect.Left + Snap((rect.Width - total) / 2f);
+            float midY = rect.Top + rect.Height / 2f;
+
+            RectangleF sunRect = Snap(new RectangleF(left, midY - icon / 2f, icon, icon));
+            RectangleF trackRect = Snap(new RectangleF(left + icon + gap, midY - trackHeight / 2f, trackWidth, trackHeight));
+            RectangleF moonRect = Snap(new RectangleF(left + icon + gap + trackWidth + gap, midY - icon / 2f, icon, icon));
+
+            if (f.Rtl)
+            {
+                // 读的方向反过来：月亮在左、太阳在右，开关本身不动。
+                RectangleF swap = sunRect;
+                sunRect = moonRect;
+                moonRect = swap;
+            }
+
+            DrawSunGlyph(g, sunRect, Theme.Text);
+            DrawMoonGlyph(g, moonRect, Theme.Text);
+
+            Theme.FillRoundRect(g, trackRect, trackRect.Height / 2f, Theme.Panel);
+            Theme.DrawRoundRect(g, trackRect, trackRect.Height / 2f, Theme.Line, PenWidth(s));
+
+            // 圆钮：浅色模式停在左边，暗色模式停在右边。
+            float knob = Snap(trackRect.Height - Snap(4f * s));
+            float inset = Snap(2f * s);
+            float knobLeft = Theme.Dark ? trackRect.Right - inset - knob : trackRect.Left + inset;
+            RectangleF knobRect = Snap(new RectangleF(
+                knobLeft,
+                trackRect.Top + (trackRect.Height - knob) / 2f,
+                knob,
+                knob));
+
+            using (SolidBrush brush = new SolidBrush(Theme.Muted))
+            {
+                g.FillEllipse(brush, knobRect);
+            }
+        }
+
+        /// <summary>
+        /// 太阳图标：圆环 + 8 条短射线。射线起点贴着圆环外侧，离远了就散成一团线。
+        /// </summary>
+        private static void DrawSunGlyph(Graphics g, RectangleF rect, Color color)
+        {
+            float d = Math.Min(rect.Width, rect.Height);
+            if (d <= 0f)
+            {
+                return;
+            }
+
+            float cx = rect.Left + d / 2f;
+            float cy = rect.Top + d / 2f;
+            float core = d * 0.44f;
+            float rayStart = d * 0.30f;
+            float rayEnd = d * 0.48f;
+
+            using (Pen pen = new Pen(color, Math.Max(1.3f, d * 0.085f)))
+            {
+                pen.StartCap = LineCap.Round;
+                pen.EndCap = LineCap.Round;
+
+                g.DrawEllipse(pen, cx - core / 2f, cy - core / 2f, core, core);
+
+                for (int i = 0; i < 8; i++)
+                {
+                    double angle = i * Math.PI / 4.0;
+                    float cos = (float)Math.Cos(angle);
+                    float sin = (float)Math.Sin(angle);
+                    g.DrawLine(
+                        pen,
+                        cx + cos * rayStart,
+                        cy + sin * rayStart,
+                        cx + cos * rayEnd,
+                        cy + sin * rayEnd);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 弯月图标：外圆的一段短弧 + 内圆的一段反向弧，拼成闭合月牙再填充。
+        /// 不能用两个椭圆的 Alternate 差集 —— 那样内圆伸到外圆外面的部分也会被填上，月牙会胀成一块黑饼。
+        /// </summary>
+        private static void DrawMoonGlyph(Graphics g, RectangleF rect, Color color)
+        {
+            float d = Math.Min(rect.Width, rect.Height);
+            if (d <= 0f)
+            {
+                return;
+            }
+
+            float cx = rect.Left + d / 2f;
+            float cy = rect.Top + d / 2f;
+
+            float outerR = d * 0.5f;
+            float innerR = d * 0.64f;
+            float distance = d * 0.36f;
+
+            // 缺口朝右上（315°）：内圆圆心往外圆右上方挪。
+            const float ux = 0.70710678f;
+            const float uy = -0.70710678f;
+            float innerCx = cx + ux * distance;
+            float innerCy = cy + uy * distance;
+
+            // 两圆交点：a 是交点连线到外圆心的距离，h 是半弦长。
+            float a = (outerR * outerR - innerR * innerR + distance * distance) / (2f * distance);
+            float h = (float)Math.Sqrt(Math.Max(0f, outerR * outerR - a * a));
+
+            float mx = cx + ux * a;
+            float my = cy + uy * a;
+            float p1x = mx - uy * h;
+            float p1y = my + ux * h;
+            float p2x = mx + uy * h;
+            float p2y = my - ux * h;
+
+            float outerStart = Angle(cx, cy, p1x, p1y);
+            float outerEnd = Angle(cx, cy, p2x, p2y);
+            float innerStart = Angle(innerCx, innerCy, p2x, p2y);
+            float innerEnd = Angle(innerCx, innerCy, p1x, p1y);
+
+            using (GraphicsPath path = new GraphicsPath())
+            using (SolidBrush brush = new SolidBrush(color))
+            {
+                // 外弧走远离内圆的那一侧，内弧逆时针绕回起点，两条弧共用交点。
+                path.AddArc(cx - outerR, cy - outerR, outerR * 2f, outerR * 2f, outerStart, Clockwise(outerStart, outerEnd));
+                path.AddArc(innerCx - innerR, innerCy - innerR, innerR * 2f, innerR * 2f, innerStart, -Clockwise(innerEnd, innerStart));
+                path.CloseFigure();
+
+                g.FillPath(brush, path);
+            }
+        }
+
+        /// <summary>点相对圆心的角度（度，0 = 3 点钟，顺时针为正）。</summary>
+        private static float Angle(float cx, float cy, float x, float y)
+        {
+            return (float)(Math.Atan2(y - cy, x - cx) * 180.0 / Math.PI);
+        }
+
+        /// <summary>从 start 顺时针扫到 end 的正角度（0..360）。</summary>
+        private static float Clockwise(float start, float end)
+        {
+            float sweep = end - start;
+            while (sweep < 0f)
+            {
+                sweep += 360f;
+            }
+
+            while (sweep >= 360f)
+            {
+                sweep -= 360f;
+            }
+
+            return sweep;
         }
 
         private void DrawToast(Graphics g, Frame f)
@@ -2198,6 +2428,17 @@ namespace VGamepadWeb.WinForm.UI
                     ShowLanguageMenu();
                     break;
 
+                case HitAction.ToggleTheme:
+                    {
+                        Action handler = ToggleTheme;
+                        if (handler != null)
+                        {
+                            handler();
+                        }
+
+                        break;
+                    }
+
                 case HitAction.FocusPort:
                     if (_portBox != null)
                     {
@@ -2431,7 +2672,8 @@ namespace VGamepadWeb.WinForm.UI
             FocusPort,
             FocusPass,
             Disconnect,
-            RemoveDevice
+            RemoveDevice,
+            ToggleTheme
         }
 
         private enum ButtonStyle
@@ -2514,6 +2756,7 @@ namespace VGamepadWeb.WinForm.UI
             public RectangleF SlotsTitle;
             public RectangleF SlotCount;
             public RectangleF FooterRow;
+            public RectangleF ThemeButton;
 
             public List<CardInfo> Cards = new List<CardInfo>();
             public List<Hit> Hits = new List<Hit>();
