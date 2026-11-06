@@ -1,10 +1,30 @@
 using Microsoft.Win32;
 using System.Diagnostics;
+using VGamepadWeb.WinForm.UI;
 
 namespace VGamepadWeb.WinForm
 {
     public static class DriverHelper
     {
+        /// <summary>
+        /// 语言：装驱动失败时的系统弹窗要跟随界面语言。
+        /// 装驱动发生在界面起来之前，所以从落盘设置里直接读。
+        /// </summary>
+        private static string CurrentLanguage
+        {
+            get
+            {
+                try
+                {
+                    return AppSettings.Load().Language;
+                }
+                catch (Exception)
+                {
+                    return Languages.Chinese;
+                }
+            }
+        }
+
         /// <summary>
         /// الفحص المركزي: يتحقق من وجود التعريف، وإذا لم يجده يقوم بتثبيته فوراً
         /// </summary>
@@ -78,7 +98,10 @@ namespace VGamepadWeb.WinForm
             }
             catch (Exception ex)
             {
-                System.Windows.Forms.MessageBox.Show($"فشل التثبيت التلقائي للتعريف المساعد: {ex.Message}", "خطأ في النظام");
+                string lang = CurrentLanguage;
+                System.Windows.Forms.MessageBox.Show(
+                    Strings.WithDirectionMarks(Strings.T(lang, "dialog.driverInstallFailed.text", ex.Message), lang),
+                    Strings.WithDirectionMarks(Strings.T(lang, "dialog.driverInstallFailed.title"), lang));
                 if (File.Exists(tempExePath)) File.Delete(tempExePath);
                 return false;
             }

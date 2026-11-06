@@ -291,6 +291,34 @@ namespace VGamepadWeb.WinForm
                 // 服务起来后立刻把落盘的槽位配置灌进去：类型 / 名称 / 锁定都在设备创建之前生效。
                 _server.ApplySlotConfig(BuildSlotConfigs());
 
+                // 自检：界面上的「运行中」只说明状态机走到了这一步，不代表服务真的能用。
+                // 这里真的去连一次端口、取一次首页，把「假启动」变成会报错的事。
+                ServerHealthCheck.Result health = await RunHealthCheckAsync();
+
+                if (!health.Ok)
+                {
+                    ServerLog.Error($"启动自检未通过：{health.Message}");
+
+                    // 自检没过就把服务收干净：只改状态机的话，端口仍被占着，
+                    // 下一次启动就会撞 address already in use。
+                    await StopServerQuietlyAsync();
+
+                    CurrentState = ServerPhase.Stopped;
+                    ShowToast("toast.selfCheckFailed", ToastError, health.Message);
+                    return;
+                }
+
+                if (health.LanWarning)
+                {
+                    // 服务能用，但局域网不通：照样允许运行，只提示。
+                    ServerLog.Warn(health.Message);
+                    ShowToast("toast.lanUnreachable", ToastWarn, health.Message);
+                }
+                else
+                {
+                    ServerLog.Info("启动自检通过：端口在监听，首页可访问");
+                }
+
                 _startedAt = DateTimeOffset.Now;
                 CurrentState = ServerPhase.Running;
             }
@@ -298,8 +326,35 @@ namespace VGamepadWeb.WinForm
             {
                 _startedAt = null;
                 CurrentState = ServerPhase.Stopped;
+                ServerLog.Error("启动服务失败", ex);
                 ShowToast("toast.startFailed", ToastError, ex.Message);
             }
+        }
+
+        /// <summary>
+        /// 启动后自检：端口是否真的在监听、首页是否真的能打开。
+        /// 局域网地址单独探一遍 —— 本机通、局域网不通，通常是防火墙而不是服务坏了。
+        /// </summary>
+        private async Task<ServerHealthCheck.Result> RunHealthCheckAsync()
+        {
+            List<string> lanAddresses = NetworkHelper.GetAllLocalIPv4Addresses()
+                .Select(item => item.Ip)
+                .ToList();
+
+            ServerHealthCheck.Result health = ServerHealthCheck.Check(_settings.Port, lanAddresses);
+
+            if (!health.Ok)
+            {
+                return health;
+            }
+
+            ServerHealthCheck.Result homepage = await ServerHealthCheck.CheckHomepageAsync(_settings.Port, "127.0.0.1");
+            if (!homepage.Ok)
+            {
+                return new ServerHealthCheck.Result(false, "首页无法访问：" + homepage.Message, homepage.StatusCode);
+            }
+
+            return health;
         }
 
         private async Task StopServerCoreAsync()
@@ -322,6 +377,22 @@ namespace VGamepadWeb.WinForm
             {
                 _startedAt = null;
                 CurrentState = ServerPhase.Stopped;
+            }
+        }
+
+        /// <summary>
+        /// 启动失败/自检失败时的收尾：把服务停掉，释放端口。
+        /// 失败不再往外抛 —— 此刻已经有错误要报给用户了，再叠一个异常只会添乱。
+        /// </summary>
+        private async Task StopServerQuietlyAsync()
+        {
+            try
+            {
+                await _server.StopServerAsync();
+            }
+            catch (Exception ex)
+            {
+                ServerLog.Warn($"清理失败的服务时出错：{ex.Message}");
             }
         }
 
@@ -632,7 +703,8 @@ namespace VGamepadWeb.WinForm
                 Hide();
                 _tray.ShowMinimizedHint(
                     Strings.T(_settings.Language, "tray.minimized.title"),
-                    Strings.T(_settings.Language, "tray.minimized.text"));
+                    Strings.T(_settings.Language, "tray.minimized.text"),
+                    _settings.Language);
                 return;
             }
 

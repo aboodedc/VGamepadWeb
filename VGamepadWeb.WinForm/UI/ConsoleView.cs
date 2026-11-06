@@ -63,6 +63,9 @@ namespace VGamepadWeb.WinForm.UI
         private bool _passwordVisible;
         private bool _portInvalid;
 
+        /// <summary>当前语言是否从右往左读（阿拉伯语）：布局镜像 + 文字 RTL 排版。</summary>
+        private bool _rtl;
+
         private Frame _frame;
         private bool _frameDirty = true;
 
@@ -133,6 +136,9 @@ namespace VGamepadWeb.WinForm.UI
 
             _model = model ?? new UiModel();
             _qrImage = qrImage;
+
+            // 阿语是从右往左读的：布局镜像 + 文字 RTL 排版，两件事一起切。
+            _rtl = Strings.IsRtl(Lang);
 
             // 宿主每 500ms 递一份快照上来；画面内容没变就别重绘，否则整窗跟着抖。
             string signature = BuildSignature();
@@ -393,7 +399,6 @@ namespace VGamepadWeb.WinForm.UI
             menu.Closed += (_, _) => Invalidate();
             return menu;
         }
-
         private void LanguageItemClick(object sender, EventArgs e)
         {
             ToolStripMenuItem item = sender as ToolStripMenuItem;
@@ -416,6 +421,10 @@ namespace VGamepadWeb.WinForm.UI
         {
             Frame frame = CurrentFrame();
             string current = Lang;
+
+            // 阿拉伯语下菜单本身也要从右往左展开，否则语言名和勾选标记会挤在错误的一侧。
+            _langMenu.RightToLeft = _rtl ? RightToLeft.Yes : RightToLeft.No;
+
             for (int i = 0; i < _langMenu.Items.Count; i++)
             {
                 ToolStripMenuItem item = _langMenu.Items[i] as ToolStripMenuItem;
@@ -425,9 +434,10 @@ namespace VGamepadWeb.WinForm.UI
                 }
             }
 
-            _langMenu.Show(
-                this,
-                new Point((int)Math.Round(frame.LangField.Left), (int)Math.Round(frame.LangField.Bottom) + 2));
+            // 菜单从字段的哪一侧弹出也跟着翻：RTL 下从左边弹。
+            int x = (int)Math.Round(frame.LangField.Left);
+
+            _langMenu.Show(this, new Point(x, (int)Math.Round(frame.LangField.Bottom) + 2));
         }
 
         private void PortKeyPress(object sender, KeyPressEventArgs e)
@@ -497,6 +507,15 @@ namespace VGamepadWeb.WinForm.UI
             {
                 _pwdToggle.Text = text;
             }
+
+            // 按钮整体挪到了框的另一端，文字也要跟着换边，否则会空掉一大片。
+            ContentAlignment toggleAlign = _rtl ? ContentAlignment.MiddleLeft : ContentAlignment.MiddleRight;
+            if (_pwdToggle.TextAlign != toggleAlign)
+            {
+                _pwdToggle.TextAlign = toggleAlign;
+            }
+
+            _pwdToggle.Padding = _rtl ? new Padding(6, 0, 0, 0) : new Padding(0, 0, 6, 0);
 
             // 运行中整套凭据锁定，显隐按钮跟着消失，免得在白框上留一块灰。
             bool visible = !InputLocked;
@@ -670,20 +689,32 @@ namespace VGamepadWeb.WinForm.UI
             StyleInputBox(_portBox, _portFont, locked);
             StyleInputBox(_passBox, _passFont, locked);
 
+            // 输入框里的内容（端口数字、密码）始终是 LTR 的：TextBox 的 RightToLeft 只决定
+            // 贴哪一边，不会重排字符顺序。但值要和它上方的标签同侧，
+            // 否则阿语界面里标签贴右、值贴左，两者隔得老远。
+            HorizontalAlignment valueAlign = frame.Rtl ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+            if (_portBox.TextAlign != valueAlign) _portBox.TextAlign = valueAlign;
+            if (_passBox.TextAlign != valueAlign) _passBox.TextAlign = valueAlign;
+
+            // 显隐按钮跟着布局走：RTL 下它贴在框的左端内侧，所以左右内边距要交换。
             LayoutInput(_portBox, frame.PortInput, 10f * frame.Scale, 10f * frame.Scale);
-            LayoutInput(_passBox, frame.PassInput, 10f * frame.Scale, 56f * frame.Scale);
+            LayoutInput(_passBox, frame.PassInput, frame.Rtl ? 56f * frame.Scale : 10f * frame.Scale,
+                frame.Rtl ? 10f * frame.Scale : 56f * frame.Scale);
 
             SyncPasswordToggle();
             LayoutPasswordToggle(frame);
         }
 
-        /// <summary>显隐按钮贴在密码框最右端内侧：文字右对齐，距框右沿 6px。</summary>
+        /// <summary>显隐按钮贴在密码框靠内的一端：文字右对齐，距框沿 6px。</summary>
         private void LayoutPasswordToggle(Frame frame)
         {
             float s = frame.Scale;
             float width = 48f * s;
             float height = 28f * s;
-            float x = frame.PassInput.Right - width - 6f * s;
+            // RTL：密码框整体在右边，显隐按钮挪到左端内侧。
+            float x = frame.Rtl
+                ? frame.PassInput.Left + 6f * s
+                : frame.PassInput.Right - width - 6f * s;
             float y = frame.PassInput.Top + (frame.PassInput.Height - height) / 2f;
 
             ApplyBounds(
@@ -793,6 +824,13 @@ namespace VGamepadWeb.WinForm.UI
         /// <summary>设计坐标 → 客户坐标：先乘缩放，再加居中偏移，最后取整。</summary>
         private static RectangleF R(Frame f, float x, float y, float width, float height)
         {
+            // RTL：整块布局水平镜像（x 轴翻转）。
+            // 文字的对齐方向由 DrawTextRtl 单独处理，这里只管矩形位置。
+            if (f.Rtl)
+            {
+                x = BaseWidth - x - width;
+            }
+
             return Snap(new RectangleF(
                 f.OffsetX + x * f.Scale,
                 f.OffsetY + y * f.Scale,
@@ -829,6 +867,7 @@ namespace VGamepadWeb.WinForm.UI
             f.OffsetY = Snap(Math.Max(0f, (ClientSize.Height - BaseHeight * s) / 2f));
 
             string lang = Lang;
+            f.Rtl = _rtl;
             List<SlotItem> slots = _model.Slots ?? new List<SlotItem>();
 
             // ---------- 第一行：服务面板（地址 | 端口密码 | 启停），只用 24px 间距分区 ----------
@@ -1082,7 +1121,12 @@ namespace VGamepadWeb.WinForm.UI
             DrawButton(g, f, f.CopyButton, Strings.T(lang, "addr.copy"), 13f, ButtonStyle.Link, "copy", true);
         }
 
-        /// <summary>大号地址：IP 用主文字色，端口单独染蓝，一眼能读。</summary>
+        /// <summary>
+        /// 大号地址：IP 用主文字色，端口单独染蓝，一眼能读。
+        ///
+        /// 地址整体是一个 LTR 单元（"192.168.1.5:5000"），哪怕界面是阿语，
+        /// 它也必须按原样从左往右读。所以这里自己算两段的位置，不交给 RTL 自动摆。
+        /// </summary>
         private void DrawAddressValue(Graphics g, Frame f)
         {
             float s = f.Scale;
@@ -1098,29 +1142,47 @@ namespace VGamepadWeb.WinForm.UI
                 }
 
                 float ipWidth = Measure(ip, addrFont);
-                DrawText(
+                float portWidth = Measure(port, addrFont);
+
+                // RTL：地址单元贴到矩形的右缘（阿语的行首在右），但单元内部仍按 IP:端口 左→右。
+                // 两段各自贴着自己在单元里的位置，所以这里必须手动定位，不能拿矩形 Left 推算。
+                float ipLeft;
+                float portLeft;
+
+                if (f.Rtl)
+                {
+                    float total = ipWidth + portWidth;
+                    ipLeft = f.AddrText.Right - total;
+                    portLeft = ipLeft + ipWidth;
+                }
+                else
+                {
+                    ipLeft = f.AddrText.Left;
+                    portLeft = f.AddrText.Left + ipWidth;
+                }
+
+                // IP 与端口都是 LTR 单元：用 DrawTextLtr 强制贴各自矩形的左缘，
+                // 否则 RTL 的 Near 会变成贴右缘，文字会整体偏移。
+                DrawTextLtr(
                     g,
                     ip,
                     addrFont,
                     Theme.Text,
-                    Snap(new RectangleF(f.AddrText.Left, f.AddrText.Top, ipWidth + Snap(2f * s), f.AddrText.Height)),
+                    Snap(new RectangleF(ipLeft, f.AddrText.Top, ipWidth + Snap(2f * s), f.AddrText.Height)),
                     StringAlignment.Near,
-                    StringAlignment.Center,
-                    false);
+                    StringAlignment.Center);
 
-                float portLeft = Snap(f.AddrText.Left + ipWidth);
-                float portWidth = Math.Max(0f, f.AddrText.Right - portLeft);
-                if (portWidth > 0f)
+                float available = Math.Max(0f, f.AddrText.Right - portLeft);
+                if (available > 0f)
                 {
-                    DrawText(
+                    DrawTextLtr(
                         g,
                         port,
                         addrFont,
                         Theme.Accent,
-                        Snap(new RectangleF(portLeft, f.AddrText.Top, portWidth, f.AddrText.Height)),
+                        Snap(new RectangleF(portLeft, f.AddrText.Top, available, f.AddrText.Height)),
                         StringAlignment.Near,
-                        StringAlignment.Center,
-                        false);
+                        StringAlignment.Center);
                 }
             }
         }
@@ -1229,26 +1291,40 @@ namespace VGamepadWeb.WinForm.UI
 
             using (Font font = Theme.Sans(13f * s))
             {
+                // RTL：语言名贴右，箭头挪到左端 —— 两者跟着读的方向一起翻。
+                RectangleF textRect = f.Rtl
+                    ? Snap(new RectangleF(rect.Left + Snap(30f * s), rect.Top, rect.Width - Snap(40f * s), rect.Height))
+                    : Snap(new RectangleF(rect.Left + Snap(10f * s), rect.Top, rect.Width - Snap(40f * s), rect.Height));
+
                 DrawText(
                     g,
                     Strings.LanguageName(Lang),
                     font,
                     Theme.Text,
-                    Snap(new RectangleF(rect.Left + Snap(10f * s), rect.Top, rect.Width - Snap(40f * s), rect.Height)),
+                    textRect,
                     StringAlignment.Near,
                     StringAlignment.Center,
                     true);
             }
 
-            float cx = Snap(rect.Right - Snap(17f * s));
+            float cx = Snap(f.Rtl ? rect.Left + Snap(17f * s) : rect.Right - Snap(17f * s));
             float cy = Snap(rect.Top + rect.Height / 2f);
             float w = Snap(4f * s);
             using (Pen pen = new Pen(Theme.Muted, PenWidth(1.4f * s)))
             {
                 pen.StartCap = LineCap.Round;
                 pen.EndCap = LineCap.Round;
-                g.DrawLine(pen, Snap(cx - w), Snap(cy - w / 2f), cx, Snap(cy + w / 2f));
-                g.DrawLine(pen, cx, Snap(cy + w / 2f), Snap(cx + w), Snap(cy - w / 2f));
+                // RTL 下箭头也翻个向：原本朝右下，翻成朝左下。
+                if (f.Rtl)
+                {
+                    g.DrawLine(pen, Snap(cx + w), Snap(cy - w / 2f), cx, Snap(cy + w / 2f));
+                    g.DrawLine(pen, cx, Snap(cy + w / 2f), Snap(cx - w), Snap(cy - w / 2f));
+                }
+                else
+                {
+                    g.DrawLine(pen, Snap(cx - w), Snap(cy - w / 2f), cx, Snap(cy + w / 2f));
+                    g.DrawLine(pen, cx, Snap(cy + w / 2f), Snap(cx + w), Snap(cy - w / 2f));
+                }
             }
         }
 
@@ -1394,12 +1470,30 @@ namespace VGamepadWeb.WinForm.UI
             }
 
             // 计数：数字用运行绿 + 等宽，后面接一句灰字，右对齐成一列。
+            // RTL 下这一列要整体贴到左边：数字在左、说明在右（阿语的行首在右）。
             string suffix = Strings.T(lang, "slot.onlineSuffix");
             using (Font suffixFont = Theme.Sans(13f * s))
             using (Font countFont = Theme.Mono(13f * s, FontStyle.Bold))
             {
                 float suffixWidth = Measure(suffix, suffixFont);
-                float suffixLeft = Snap(f.SlotCount.Right - suffixWidth);
+                string countText = _model.Online + "/" + total;
+                float countWidth = Measure(countText, countFont);
+
+                float suffixLeft;
+                float countLeft;
+
+                if (f.Rtl)
+                {
+                    // 贴着矩形左缘排：先数字，后说明。
+                    countLeft = f.SlotCount.Left;
+                    suffixLeft = countLeft + countWidth + Snap(8f * s);
+                }
+                else
+                {
+                    suffixLeft = Snap(f.SlotCount.Right - suffixWidth);
+                    countLeft = Snap(suffixLeft - Snap(8f * s) - countWidth);
+                }
+
                 DrawText(
                     g,
                     suffix,
@@ -1410,18 +1504,15 @@ namespace VGamepadWeb.WinForm.UI
                     StringAlignment.Center,
                     false);
 
-                string count = _model.Online + "/" + total;
-                float countRight = Snap(suffixLeft - Snap(8f * s));
-                float countWidth = Math.Min(Measure(count, countFont), Math.Max(0f, countRight - f.SlotCount.Left));
-                DrawText(
+                // 计数是 "2/4"，LTR 单元：强制贴左缘。
+                DrawTextLtr(
                     g,
-                    count,
+                    countText,
                     countFont,
                     Theme.Green,
-                    Snap(new RectangleF(countRight - countWidth, f.SlotCount.Top, countWidth + Snap(2f * s), f.SlotCount.Height)),
+                    Snap(new RectangleF(countLeft, f.SlotCount.Top, countWidth + Snap(2f * s), f.SlotCount.Height)),
                     StringAlignment.Near,
-                    StringAlignment.Center,
-                    false);
+                    StringAlignment.Center);
             }
 
             for (int i = 0; i < f.Cards.Count; i++)
@@ -1456,15 +1547,16 @@ namespace VGamepadWeb.WinForm.UI
 
             using (Font numberFont = Theme.Mono(12f * s, FontStyle.Bold))
             {
-                DrawText(
+                // 槽位编号是纯数字（LTR 单元），阿语下也要贴框的左缘。
+                // 走 DrawText 的话 RTL 的 Near 会变成贴右缘，22px 宽的框根本放不下两个数字。
+                DrawTextLtr(
                     g,
                     card.SlotNumber.ToString("00"),
                     numberFont,
                     card.Occupied ? (xbox ? Theme.Xbox : Theme.Ps) : Theme.Faint,
                     card.NumberRect,
                     StringAlignment.Near,
-                    StringAlignment.Center,
-                    false);
+                    StringAlignment.Center);
             }
 
             // 标题：配置了名字就显示名字，否则保持「玩家 N」；锁定槽位在后面追加一个可见标识。
@@ -1481,28 +1573,60 @@ namespace VGamepadWeb.WinForm.UI
                 using (Font titleFont = CreateFittedFont(false, 13f, s, FontStyle.Bold, title, titleMax, 11f))
                 {
                     float titleWidth = Math.Min(Measure(title, titleFont), titleMax);
-                    DrawText(
-                        g,
-                        title,
-                        titleFont,
-                        Theme.Text,
-                        Snap(new RectangleF(card.TitleRect.Left, card.TitleRect.Top, titleWidth + Snap(2f * s), card.TitleRect.Height)),
-                        StringAlignment.Near,
-                        StringAlignment.Center,
-                        true);
 
-                    if (lockLabel != null)
+                    if (f.Rtl)
                     {
-                        float lockLeft = Snap(card.TitleRect.Left + titleWidth + Snap(6f * s));
+                        // RTL：标题贴右，「已锁定」标记跟在标题左边。
+                        float titleRight = card.TitleRect.Right;
                         DrawText(
                             g,
-                            lockLabel,
-                            lockFont,
-                            Theme.Amber,
-                            Snap(new RectangleF(lockLeft, card.TitleRect.Top, Math.Max(0f, card.TitleRect.Right - lockLeft), card.TitleRect.Height)),
+                            title,
+                            titleFont,
+                            Theme.Text,
+                            Snap(new RectangleF(titleRight - titleWidth, card.TitleRect.Top, titleWidth + Snap(2f * s), card.TitleRect.Height)),
+                            StringAlignment.Far,
+                            StringAlignment.Center,
+                            true);
+
+                        if (lockLabel != null)
+                        {
+                            float lockRight = Snap(titleRight - titleWidth - Snap(6f * s));
+                            DrawText(
+                                g,
+                                lockLabel,
+                                lockFont,
+                                Theme.Amber,
+                                Snap(new RectangleF(card.TitleRect.Left, card.TitleRect.Top, Math.Max(0f, lockRight - card.TitleRect.Left), card.TitleRect.Height)),
+                                StringAlignment.Far,
+                                StringAlignment.Center,
+                                false);
+                        }
+                    }
+                    else
+                    {
+                        DrawText(
+                            g,
+                            title,
+                            titleFont,
+                            Theme.Text,
+                            Snap(new RectangleF(card.TitleRect.Left, card.TitleRect.Top, titleWidth + Snap(2f * s), card.TitleRect.Height)),
                             StringAlignment.Near,
                             StringAlignment.Center,
-                            false);
+                            true);
+
+                        if (lockLabel != null)
+                        {
+                            float lockLeft = Snap(card.TitleRect.Left + titleWidth + Snap(6f * s));
+                            DrawText(
+                                g,
+                                lockLabel,
+                                lockFont,
+                                Theme.Amber,
+                                Snap(new RectangleF(lockLeft, card.TitleRect.Top, Math.Max(0f, card.TitleRect.Right - lockLeft), card.TitleRect.Height)),
+                                StringAlignment.Near,
+                                StringAlignment.Center,
+                                false);
+                        }
                     }
                 }
             }
@@ -1525,7 +1649,7 @@ namespace VGamepadWeb.WinForm.UI
             }
         }
 
-        /// <summary>右上角状态：8px 圆点 + 「已连接 / 空闲」。</summary>
+        /// <summary>状态徽标：8px 圆点 + 「已连接 / 空闲」。RTL 下圆点在右、文字在左。</summary>
         private void DrawCardState(Graphics g, Frame f, CardInfo card)
         {
             float s = f.Scale;
@@ -1535,19 +1659,31 @@ namespace VGamepadWeb.WinForm.UI
             Color color = card.Occupied ? Theme.Green : Theme.DotIdle;
             Color textColor = card.Occupied ? Theme.Green : Theme.Muted;
 
+            // RTL：圆点贴着矩形的右缘，文字在圆点左边。
+            float dotLeft = f.Rtl
+                ? Snap(card.StateRect.Right - dot)
+                : card.StateRect.Left;
+
             using (SolidBrush brush = new SolidBrush(color))
             {
-                g.FillEllipse(brush, card.StateRect.Left, Snap(card.StateRect.Top + (card.StateRect.Height - dot) / 2f), dot, dot);
+                g.FillEllipse(brush, dotLeft, Snap(card.StateRect.Top + (card.StateRect.Height - dot) / 2f), dot, dot);
             }
 
             using (Font font = Theme.Sans(11.5f * s))
             {
+                float textLeft = f.Rtl
+                    ? card.StateRect.Left
+                    : Snap(card.StateRect.Left + dot + gap);
+                float textWidth = f.Rtl
+                    ? Math.Max(0f, dotLeft - gap - card.StateRect.Left)
+                    : Math.Max(0f, card.StateRect.Width - dot - gap);
+
                 DrawText(
                     g,
                     Strings.T(Lang, card.Occupied ? "slot.connected" : "slot.idle"),
                     font,
                     textColor,
-                    Snap(new RectangleF(card.StateRect.Left + dot + gap, card.StateRect.Top, Math.Max(0f, card.StateRect.Width - dot - gap), card.StateRect.Height)),
+                    Snap(new RectangleF(textLeft, card.StateRect.Top, textWidth, card.StateRect.Height)),
                     StringAlignment.Near,
                     StringAlignment.Center,
                     false);
@@ -1568,22 +1704,44 @@ namespace VGamepadWeb.WinForm.UI
             using (Font typeFont = CreateFittedFont(false, 14f, s, FontStyle.Bold, typeLabel, card.TypeRect.Width - Snap(26f * s), 11f))
             {
                 float iconSize = Snap(18f * s);
+
+                // RTL：图标贴在文字右侧（阿语行首在右），文字跟在图标左边。
+                float iconLeft = f.Rtl
+                    ? Snap(card.TypeRect.Right - iconSize)
+                    : card.TypeRect.Left;
+
                 DrawGamepadGlyph(
                     g,
-                    Snap(new RectangleF(card.TypeRect.Left, card.TypeRect.Top + (card.TypeRect.Height - iconSize) / 2f, iconSize, iconSize)),
+                    Snap(new RectangleF(iconLeft, card.TypeRect.Top + (card.TypeRect.Height - iconSize) / 2f, iconSize, iconSize)),
                     brand,
                     s);
 
-                float textLeft = Snap(card.TypeRect.Left + iconSize + Snap(8f * s));
-                DrawText(
-                    g,
-                    typeLabel,
-                    typeFont,
-                    xbox ? Theme.XboxText : Theme.PsText,
-                    Snap(new RectangleF(textLeft, card.TypeRect.Top, Math.Max(0f, card.TypeRect.Right - textLeft), card.TypeRect.Height)),
-                    StringAlignment.Near,
-                    StringAlignment.Center,
-                    true);
+                if (f.Rtl)
+                {
+                    // 文字右对齐、紧贴图标左边。
+                    DrawText(
+                        g,
+                        typeLabel,
+                        typeFont,
+                        xbox ? Theme.XboxText : Theme.PsText,
+                        Snap(new RectangleF(card.TypeRect.Left, card.TypeRect.Top, Math.Max(0f, iconLeft - Snap(8f * s) - card.TypeRect.Left), card.TypeRect.Height)),
+                        StringAlignment.Far,
+                        StringAlignment.Center,
+                        true);
+                }
+                else
+                {
+                    float textLeft = Snap(card.TypeRect.Left + iconSize + Snap(8f * s));
+                    DrawText(
+                        g,
+                        typeLabel,
+                        typeFont,
+                        xbox ? Theme.XboxText : Theme.PsText,
+                        Snap(new RectangleF(textLeft, card.TypeRect.Top, Math.Max(0f, card.TypeRect.Right - textLeft), card.TypeRect.Height)),
+                        StringAlignment.Near,
+                        StringAlignment.Center,
+                        true);
+                }
             }
 
             using (Font metaFont = Theme.Sans(11.5f * s))
@@ -1751,22 +1909,30 @@ namespace VGamepadWeb.WinForm.UI
             }
         }
 
-        /// <summary>页脚：左侧版本号角标，不加分割线。</summary>
+        /// <summary>页脚：版本号角标，不加分割线。版本号是 LTR 内容，阿语下也照样从左往右读。</summary>
         private void DrawFooter(Graphics g, Frame f)
         {
             float s = f.Scale;
 
             using (Font font = Theme.Mono(11.5f * s))
             {
-                DrawText(
-                    g,
-                    "VGamepadWeb v" + (_model.Version ?? "0.0.0"),
-                    font,
-                    Theme.Faint,
-                    f.FooterRow,
-                    StringAlignment.Near,
-                    StringAlignment.Center,
-                    false);
+                // 版号本身是 ASCII，RTL 标志会让它贴到右边去；这里显式用 LTR 绘制并贴左缘。
+                float width = Measure("VGamepadWeb v" + (_model.Version ?? "0.0.0"), font);
+                RectangleF rect = f.Rtl
+                    ? Snap(new RectangleF(f.FooterRow.Right - width, f.FooterRow.Top, width + Snap(2f * s), f.FooterRow.Height))
+                    : f.FooterRow;
+
+                using (StringFormat format = new StringFormat(StringFormat.GenericTypographic))
+                {
+                    format.Alignment = StringAlignment.Near;
+                    format.LineAlignment = StringAlignment.Center;
+                    format.FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.NoClip;
+
+                    using (SolidBrush brush = new SolidBrush(Theme.Faint))
+                    {
+                        g.DrawString("VGamepadWeb v" + (_model.Version ?? "0.0.0"), font, brush, rect, format);
+                    }
+                }
             }
         }
 
@@ -1890,7 +2056,19 @@ namespace VGamepadWeb.WinForm.UI
             _measureGraphics = Graphics.FromImage(_measureBitmap);
         }
 
-        private static void DrawText(
+        /// <summary>
+        /// 画一段文案。当前语言是从右往左读（阿拉伯语）时自动切到 RTL 排版。
+        ///
+        /// GDI+ 的 DirectionRightToLeft 实测行为（临时工程验证过）：
+        /// 1. 文字内部的数字 / ASCII 片段仍保持左到右（Unicode Bidi 的标准行为），
+        ///    "19" 不会变成 "91"，IP 也不会被倒过来；
+        /// 2. 阿拉伯字形整形 GDI+ 会自己做（与 TextRenderer 的连字形态一致）；
+        /// 3. 对齐方向自动跟着方向翻转：Near 变成「贴矩形右缘」，Far 变成「贴左缘」。
+        ///
+        /// 所以这里不需要手工对调 Near / Far —— 交给 GDI+ 处理，
+        /// 否则会对调两次，等于没翻转。
+        /// </summary>
+        private void DrawText(
             Graphics g,
             string text,
             Font font,
@@ -1917,6 +2095,53 @@ namespace VGamepadWeb.WinForm.UI
                 format.LineAlignment = vertical;
                 // NoClip：字宽差半个像素时别把最后一个字裁掉；NoWrap：所有文案单行。
                 // 超长文案靠 Trimming 出省略号（NoClip 下照样生效）。
+                format.FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.NoClip;
+                if (_rtl)
+                {
+                    format.FormatFlags |= StringFormatFlags.DirectionRightToLeft;
+                }
+
+                format.Trimming = ellipsis ? StringTrimming.EllipsisCharacter : StringTrimming.None;
+
+                using (SolidBrush brush = new SolidBrush(color))
+                {
+                    g.DrawString(text, font, brush, rect, format);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 强制按左到右绘制一段纯 ASCII 内容（数字 / IP / 版本号）。
+        ///
+        /// 这些是 LTR 单元：阿语界面里它们也必须从左往右读、贴框左缘。
+        /// 走 <see cref="DrawText"/> 的话 RTL 标志会把 Near 变成贴右缘，
+        /// 窄框里放不下就会被挤出去。
+        /// </summary>
+        private void DrawTextLtr(
+            Graphics g,
+            string text,
+            Font font,
+            Color color,
+            RectangleF rect,
+            StringAlignment horizontal,
+            StringAlignment vertical,
+            bool ellipsis = false)
+        {
+            if (g == null || font == null || string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            rect = Snap(rect);
+            if (rect.Width <= 0f || rect.Height <= 0f)
+            {
+                return;
+            }
+
+            using (StringFormat format = new StringFormat(StringFormat.GenericTypographic))
+            {
+                format.Alignment = horizontal;
+                format.LineAlignment = vertical;
                 format.FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.NoClip;
                 format.Trimming = ellipsis ? StringTrimming.EllipsisCharacter : StringTrimming.None;
 
@@ -2248,6 +2473,9 @@ namespace VGamepadWeb.WinForm.UI
         private sealed class Frame
         {
             public float Scale = 1f;
+
+            /// <summary>true = 从右往左读（阿拉伯语）：布局镜像，文字对齐方向对调。</summary>
+            public bool Rtl;
 
             /// <summary>等比缩放后的居中偏移：布局用设计坐标，绘制前统一换算。</summary>
             public float OffsetX;

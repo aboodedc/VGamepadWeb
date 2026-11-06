@@ -27,8 +27,10 @@ namespace VGamepadWeb.WinForm
             Func<string, bool> kick)
         {
             string lang = string.IsNullOrEmpty(language) ? Languages.Chinese : language;
+            bool rtl = Strings.IsRtl(lang);
 
-            Text = Strings.T(lang, "slot.dialog.title", slotNumber);
+            // 标题栏由 Windows 渲染，方向跟系统语言走 —— 套方向标记强制按阿语排。
+            Text = Strings.WithDirectionMarks(Strings.T(lang, "slot.dialog.title", slotNumber), lang);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
@@ -38,6 +40,10 @@ namespace VGamepadWeb.WinForm
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoSize = true;
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
+
+            // 阿拉伯语从右往左读：窗体整体翻转，标签与控件也跟着换边。
+            RightToLeft = rtl ? RightToLeft.Yes : RightToLeft.No;
+            RightToLeftLayout = rtl;
 
             var grid = new TableLayoutPanel
             {
@@ -92,7 +98,8 @@ namespace VGamepadWeb.WinForm
 
             var buttons = new FlowLayoutPanel
             {
-                FlowDirection = FlowDirection.RightToLeft,
+                // RTL 下按钮从右往左排；LTR 保持常规顺序（取消在左、确定在右）。
+                FlowDirection = rtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 Anchor = AnchorStyles.Right,

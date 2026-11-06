@@ -39,6 +39,9 @@ namespace VGamepadWeb.WinForm
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(_exitItem);
 
+            // 阿拉伯语下菜单从右往左展开，文字也跟着贴右。
+            menu.RightToLeft = Strings.IsRtl(language) ? RightToLeft.Yes : RightToLeft.No;
+
             _notifyIcon = new NotifyIcon
             {
                 Icon = _ownedIcon,
@@ -55,15 +58,29 @@ namespace VGamepadWeb.WinForm
         {
             _showItem.Text = Strings.T(language, "tray.show");
             _exitItem.Text = Strings.T(language, "tray.exit");
+
+            // 语言换了方向，菜单也要跟着翻。
+            if (_notifyIcon.ContextMenuStrip != null)
+            {
+                _notifyIcon.ContextMenuStrip.RightToLeft = Strings.IsRtl(language) ? RightToLeft.Yes : RightToLeft.No;
+            }
         }
 
         /// <summary>
         /// 关闭窗口后的原生提示：走 Shell_NotifyIcon 的气泡通知，
         /// Win10/11 上由系统直接渲染成通知中心里的那条，不需要额外依赖。
+        ///
+        /// 气泡的排版方向由 Windows 自己的语言设置决定，应用没法直接指定 ——
+        /// 所以阿语文案要套上 Unicode 方向标记（U+202B/U+202C），
+        /// 系统才会按从右往左排。标记不占位、不画笔画。
         /// </summary>
-        public void ShowMinimizedHint(string title, string message)
+        public void ShowMinimizedHint(string title, string message, string language)
         {
-            _notifyIcon.ShowBalloonTip(4000, title, message, ToolTipIcon.Info);
+            _notifyIcon.ShowBalloonTip(
+                4000,
+                Strings.WithDirectionMarks(title, language),
+                Strings.WithDirectionMarks(message, language),
+                ToolTipIcon.Info);
         }
 
         public void Dispose()

@@ -5,140 +5,158 @@ namespace VGamepadWeb.WinForm.UI
 {
     /// <summary>
     /// 界面文案的唯一出处（doc/01：文案集中取，不许散落字面量）。
-    /// 中文/英文一一对应；缺键时回退到键名，方便一眼看出漏了哪条。
+    /// 中文/英文/阿拉伯文一一对应；缺键时回退到键名，方便一眼看出漏了哪条。
     /// </summary>
     public static class Strings
     {
-        private static readonly Dictionary<string, (string Zh, string En)> Map =
-            new Dictionary<string, (string, string)>(StringComparer.Ordinal)
+        private static readonly Dictionary<string, (string Zh, string En, string Ar)> Map =
+            new Dictionary<string, (string, string, string)>(StringComparer.Ordinal)
             {
                 // 电源与状态
-                ["power.start"] = ("启动服务", "Start"),
-                ["power.stop"] = ("停止服务", "Stop"),
-                ["power.starting"] = ("启动中…", "Starting…"),
-                ["power.stopping"] = ("停止中…", "Stopping…"),
-                ["phase.running"] = ("RUNNING", "RUNNING"),
-                ["phase.stopped"] = ("SERVICE STOPPED", "SERVICE STOPPED"),
-                ["phase.starting"] = ("STARTING", "STARTING"),
-                ["phase.stopping"] = ("STOPPING", "STOPPING"),
-                ["state.running"] = ("服务运行中", "Service running"),
-                ["state.stopped"] = ("服务已停止", "Service stopped"),
-                ["state.starting"] = ("服务启动中", "Service starting"),
-                ["state.stopping"] = ("服务停止中", "Service stopping"),
-                ["state.stoppedHint"] = ("启动后手机即可连接", "Start to let phones connect"),
-                ["uptime"] = ("已运行 {0}", "up {0}"),
+                ["power.start"] = ("启动服务", "Start", "تشغيل الخدمة"),
+                ["power.stop"] = ("停止服务", "Stop", "إيقاف الخدمة"),
+                ["power.starting"] = ("启动中…", "Starting…", "جارٍ التشغيل…"),
+                ["power.stopping"] = ("停止中…", "Stopping…", "جارٍ الإيقاف…"),
+                ["phase.running"] = ("RUNNING", "RUNNING", "قيد التشغيل"),
+                ["phase.stopped"] = ("SERVICE STOPPED", "SERVICE STOPPED", "الخدمة متوقفة"),
+                ["phase.starting"] = ("STARTING", "STARTING", "جارٍ التشغيل"),
+                ["phase.stopping"] = ("STOPPING", "STOPPING", "جارٍ الإيقاف"),
+                ["state.running"] = ("服务运行中", "Service running", "الخدمة قيد التشغيل"),
+                ["state.stopped"] = ("服务已停止", "Service stopped", "الخدمة متوقفة"),
+                ["state.starting"] = ("服务启动中", "Service starting", "الخدمة قيد البدء"),
+                ["state.stopping"] = ("服务停止中", "Service stopping", "الخدمة قيد الإيقاف"),
+                ["state.stoppedHint"] = ("启动后手机即可连接", "Start to let phones connect", "شغّل الخدمة ليتصل الهاتف"),
+                ["uptime"] = ("已运行 {0}", "up {0}", "مدة التشغيل {0}"),
 
                 // 地址与设置
-                ["addr.title"] = ("手机访问地址 · 在手机浏览器中输入", "Phone address · open in mobile browser"),
-                ["addr.hint"] = ("手机与电脑需连接同一 Wi-Fi / 局域网", "Phone and PC must share the same Wi-Fi / LAN."),
-                ["addr.copy"] = ("复制地址", "Copy"),
-                ["addr.port"] = ("服务器端口", "Port"),
-                ["addr.password"] = ("访问密码", "Password"),
-                ["addr.optional"] = ("可选", "optional"),
-                ["addr.portHint"] = ("改后需重启服务", "restart required"),
-                ["addr.locked"] = ("服务运行中，端口与密码不可修改 — 先停止服务即可编辑，修改即时生效。", "Port and password are locked while running — stop the service to edit them."),
-                ["addr.lockedShort"] = ("只读", "read-only"),
-                ["addr.unlocked"] = ("修改后即时生效，下次启动服务使用新端口。", "Changes apply immediately and take effect on the next start."),
-                ["addr.localIp"] = ("本地 IP", "Local IP"),
-                ["addr.show"] = ("显示", "Show"),
-                ["addr.hide"] = ("隐藏", "Hide"),
-                ["config.title"] = ("配置", "Settings"),
-                ["connect.title"] = ("连接指南", "Connection guide"),
-                ["lang.label"] = ("界面语言", "Language"),
-                ["status.online"] = ("{0} 台设备在线 · 局域网可达", "{0} devices online · reachable on LAN"),
+                ["addr.title"] = ("手机访问地址 · 在手机浏览器中输入", "Phone address · open in mobile browser", "عنوان الهاتف · افتحه في متصفح الهاتف"),
+                ["addr.hint"] = ("手机与电脑需连接同一 Wi-Fi / 局域网", "Phone and PC must share the same Wi-Fi / LAN.", "يجب أن يتصل الهاتف والكمبيوتر بنفس شبكة Wi-Fi / LAN."),
+                ["addr.copy"] = ("复制地址", "Copy", "نسخ العنوان"),
+                ["addr.port"] = ("服务器端口", "Port", "منفذ الخادم"),
+                ["addr.password"] = ("访问密码", "Password", "كلمة المرور"),
+                ["addr.optional"] = ("可选", "optional", "اختياري"),
+                ["addr.portHint"] = ("改后需重启服务", "restart required", "يتطلب إعادة التشغيل"),
+                ["addr.locked"] = ("服务运行中，端口与密码不可修改 — 先停止服务即可编辑，修改即时生效。", "Port and password are locked while running — stop the service to edit them.", "المنفذ وكلمة المرور مقفلان أثناء التشغيل — أوقف الخدمة لتعديلهما."),
+                ["addr.lockedShort"] = ("只读", "read-only", "للقراءة فقط"),
+                ["addr.unlocked"] = ("修改后即时生效，下次启动服务使用新端口。", "Changes apply immediately and take effect on the next start.", "التغييرات تسري فورًا وتُستخدم في التشغيل التالي."),
+                ["addr.localIp"] = ("本地 IP", "Local IP", "IP المحلي"),
+                ["addr.show"] = ("显示", "Show", "إظهار"),
+                ["addr.hide"] = ("隐藏", "Hide", "إخفاء"),
+                ["config.title"] = ("配置", "Settings", "الإعدادات"),
+                ["connect.title"] = ("连接指南", "Connection guide", "دليل الاتصال"),
+                ["lang.label"] = ("界面语言", "Language", "لغة الواجهة"),
+                ["status.online"] = ("{0} 台设备在线 · 局域网可达", "{0} devices online · reachable on LAN", "{0} جهاز متصل · متاح عبر الشبكة المحلية"),
 
                 // 槽位
-                ["slot.section"] = ("手柄槽位", "Controller slots"),
-                ["slot.player"] = ("玩家 {0}", "Player {0}"),
-                ["ip.current"] = ("当前使用", "Current"),
-                ["slot.online"] = ("{0} / {1} 已连接", "{0} / {1} connected"),
-                ["slot.onlineSuffix"] = ("已连接", "connected"),
-                ["slot.maxCount"] = ("最多 {0} 个槽位", "max {0} slots"),
-                ["slot.add"] = ("新增槽位", "Add slot"),
-                ["slot.type"] = ("类型", "Type"),
-                ["slot.emptyNote"] = ("暂无设备，用手机打开上方地址即可占用", "No device yet — open the address above"),
-                ["slot.waiting"] = ("等待手机连接", "Waiting for phone"),
-                ["slot.connected"] = ("已连接", "Connected"),
-                ["slot.idle"] = ("空闲", "Idle"),
-                ["slot.latency"] = ("当前延迟", "Latency"),
-                ["slot.config"] = ("手柄设置", "Settings"),
-                ["slot.disconnect"] = ("断开连接", "Disconnect"),
-                ["slot.locked"] = ("已锁定", "Locked"),
+                ["slot.section"] = ("手柄槽位", "Controller slots", "خانات ذراع التحكم"),
+                ["slot.player"] = ("玩家 {0}", "Player {0}", "اللاعب {0}"),
+                ["ip.current"] = ("当前使用", "Current", "المستخدمة الآن"),
+                ["slot.online"] = ("{0} / {1} 已连接", "{0} / {1} connected", "متصل {0} / {1}"),
+                ["slot.onlineSuffix"] = ("已连接", "connected", "متصل"),
+                ["slot.maxCount"] = ("最多 {0} 个槽位", "max {0} slots", "بحد أقصى {0} خانة"),
+                ["slot.add"] = ("新增槽位", "Add slot", "إضافة خانة"),
+                ["slot.type"] = ("类型", "Type", "النوع"),
+                ["slot.emptyNote"] = ("暂无设备，用手机打开上方地址即可占用", "No device yet — open the address above", "لا توجد أجهزة بعد — افتح العنوان أعلاه من الهاتف"),
+                ["slot.waiting"] = ("等待手机连接", "Waiting for phone", "في انتظار الهاتف"),
+                ["slot.connected"] = ("已连接", "Connected", "متصل"),
+                ["slot.idle"] = ("空闲", "Idle", "متاح"),
+                ["slot.latency"] = ("当前延迟", "Latency", "زمن الاستجابة الحالي"),
+                ["slot.config"] = ("手柄设置", "Settings", "إعدادات ذراع التحكم"),
+                ["slot.disconnect"] = ("断开连接", "Disconnect", "قطع الاتصال"),
+                ["slot.locked"] = ("已锁定", "Locked", "مقفل"),
 
                 // 槽位设置对话框
-                ["slot.dialog.title"] = ("手柄设置 · 槽位 {0}", "Controller settings · slot {0}"),
-                ["slot.dialog.type"] = ("类型", "Type"),
-                ["slot.dialog.name"] = ("名称", "Name"),
-                ["slot.dialog.lock"] = ("锁定", "Lock"),
-                ["slot.dialog.lockHint"] = ("锁定后手机端无法选择该槽位", "Locked slots cannot be picked on the phone"),
-                ["slot.dialog.typeLocked"] = ("改类型需先释放该槽位", "Release the slot before changing its type"),
-                ["slot.dialog.kick"] = ("踢出连接", "Kick connection"),
-                ["slot.dialog.ok"] = ("确定", "OK"),
-                ["slot.dialog.cancel"] = ("取消", "Cancel"),
-                ["slot.delete"] = ("删除", "Remove"),
-                ["slot.assign"] = ("等待连接…", "Waiting…"),
-                ["slot.full"] = ("槽位已满", "Slots full"),
-                ["type.xbox"] = ("Xbox 360 手柄", "Xbox 360 controller"),
-                ["type.ds4"] = ("DualShock 4 手柄", "DualShock 4 controller"),
-                ["type.auto"] = ("跟随手机端", "Follow the phone"),
-                ["layout.xbox"] = ("XInput", "XInput"),
-                ["layout.ds4"] = ("PS4 布局", "PS4 layout"),
-                ["layout.auto"] = ("由手机端决定", "Chosen by the phone"),
+                ["slot.dialog.title"] = ("手柄设置 · 槽位 {0}", "Controller settings · slot {0}", "إعدادات ذراع التحكم · خانة {0}"),
+                ["slot.dialog.type"] = ("类型", "Type", "النوع"),
+                ["slot.dialog.name"] = ("名称", "Name", "الاسم"),
+                ["slot.dialog.lock"] = ("锁定", "Lock", "قفل"),
+                ["slot.dialog.lockHint"] = ("锁定后手机端无法选择该槽位", "Locked slots cannot be picked on the phone", "الخانة المقفلة لا يمكن اختيارها من الهاتف"),
+                ["slot.dialog.typeLocked"] = ("改类型需先释放该槽位", "Release the slot before changing its type", "أفرغ الخانة قبل تغيير نوعها"),
+                ["slot.dialog.kick"] = ("踢出连接", "Kick connection", "قطع الاتصال"),
+                ["slot.dialog.ok"] = ("确定", "OK", "موافق"),
+                ["slot.dialog.cancel"] = ("取消", "Cancel", "إلغاء"),
+                ["slot.delete"] = ("删除", "Remove", "حذف"),
+                ["slot.assign"] = ("等待连接…", "Waiting…", "في انتظار الاتصال…"),
+                ["slot.full"] = ("槽位已满", "Slots full", "الخانات ممتلئة"),
+                ["type.xbox"] = ("Xbox 360 手柄", "Xbox 360 controller", "ذراع تحكم Xbox 360"),
+                ["type.ds4"] = ("DualShock 4 手柄", "DualShock 4 controller", "ذراع تحكم DualShock 4"),
+                ["type.auto"] = ("跟随手机端", "Follow the phone", "حسب الهاتف"),
+                ["layout.xbox"] = ("XInput", "XInput", "XInput"),
+                ["layout.ds4"] = ("PS4 布局", "PS4 layout", "تخطيط PS4"),
+                ["layout.auto"] = ("由手机端决定", "Chosen by the phone", "يحدده الهاتف"),
 
                 // 开关与语言
-                ["setting.autoStart"] = ("开机自动启动", "Start with Windows"),
-                ["setting.minimizeToTray"] = ("最小化到托盘", "Minimize to tray"),
-                ["lang.zh"] = ("中文", "中文"),
-                ["lang.en"] = ("EN", "EN"),
+                ["setting.autoStart"] = ("开机自动启动", "Start with Windows", "التشغيل مع ويندوز"),
+                ["setting.minimizeToTray"] = ("最小化到托盘", "Minimize to tray", "تصغير إلى شريط النظام"),
+                ["lang.zh"] = ("中文", "中文", "中文"),
+                ["lang.en"] = ("EN", "EN", "EN"),
 
                 // 二维码与页脚
-                ["qr.caption"] = ("扫码连接", "Scan to connect"),
-                ["qr.hint.run"] = ("手机扫码直接打开", "Scan to open on the phone"),
-                ["qr.hint.stop"] = ("启动服务后可扫码", "Available once running"),
-                ["qr.stopped"] = ("服务未启动", "Service off"),
-                ["qr.empty"] = ("暂无地址", "No address"),
-                ["footer.github"] = ("GitHub", "GitHub"),
-                ["tray.show"] = ("显示窗口", "Show window"),
-                ["tray.exit"] = ("退出", "Exit"),
-                ["tray.minimized.title"] = ("VGamepadWeb 仍在运行", "VGamepadWeb is still running"),
-                ["tray.minimized.text"] = ("已最小化到通知区域，服务保持运行。点托盘图标即可恢复窗口。", "Minimized to the notification area — the server keeps running. Click the tray icon to reopen."),
+                ["qr.caption"] = ("扫码连接", "Scan to connect", "امسح الرمز للاتصال"),
+                ["qr.hint.run"] = ("手机扫码直接打开", "Scan to open on the phone", "امسح الرمز لفتحه على الهاتف"),
+                ["qr.hint.stop"] = ("启动服务后可扫码", "Available once running", "متاح بعد تشغيل الخدمة"),
+                ["qr.stopped"] = ("服务未启动", "Service off", "الخدمة متوقفة"),
+                ["qr.empty"] = ("暂无地址", "No address", "لا يوجد عنوان"),
+                ["footer.github"] = ("GitHub", "GitHub", "GitHub"),
+                ["tray.show"] = ("显示窗口", "Show window", "إظهار النافذة"),
+                ["tray.exit"] = ("退出", "Exit", "خروج"),
+                ["tray.minimized.title"] = ("VGamepadWeb 仍在运行", "VGamepadWeb is still running", "VGamepadWeb لا يزال قيد التشغيل"),
+                ["tray.minimized.text"] = ("已最小化到通知区域，服务保持运行。点托盘图标即可恢复窗口。", "Minimized to the notification area — the server keeps running. Click the tray icon to reopen.", "تم التصغير إلى منطقة الإشعارات — الخادم يعمل. اضغط أيقونة شريط النظام لاستعادة النافذة."),
+
+                // 系统弹窗（驱动缺失等）
+                ["dialog.driverMissing.title"] = ("运行环境错误", "Runtime error", "خطأ في بيئة التشغيل"),
+                ["dialog.driverMissing.text"] = ("本应用需要 ViGEmBus 驱动才能正常工作，程序即将关闭。", "VGamepadWeb needs the ViGEmBus driver to work. The app will close now.", "يتطلب VGamepadWeb تعريف ViGEmBus ليعمل. سيتم إغلاق التطبيق الآن."),
+                ["dialog.driverInstallFailed.title"] = ("系统错误", "System error", "خطأ في النظام"),
+                ["dialog.driverInstallFailed.text"] = ("驱动自动安装失败：{0}", "Failed to install the driver automatically: {0}", "فشل التثبيت التلقائي للتعريف: {0}"),
 
                 // 反馈（toast）
-                ["toast.copied"] = ("已复制 {0}", "Copied {0}"),
-                ["toast.noIp"] = ("本机没有可用的 IPv4 地址", "No IPv4 address available"),
-                ["toast.copyFailed"] = ("复制失败：{0}", "Copy failed: {0}"),
-                ["toast.portInvalid"] = ("端口必须在 1-65535 之间", "Port must be between 1 and 65535"),
-                ["toast.startFailed"] = ("启动失败：{0}", "Start failed: {0}"),
-                ["toast.stopFailed"] = ("停止失败：{0}", "Stop failed: {0}"),
-                ["toast.settingsSaved"] = ("设置已保存", "Settings saved"),
-                ["toast.settingsLocked"] = ("服务运行中不能修改端口或密码，请先停止服务", "Stop the service before changing port or password"),
-                ["toast.slotLimit"] = ("已达到槽位上限（{0}）", "Slot limit reached ({0})"),
-                ["toast.slotOnlyLast"] = ("只能删除最后一个槽位", "Only the last slot can be removed"),
-                ["toast.slotBusy"] = ("槽位 {0} 正在使用，先断开设备再删除", "Slot {0} is in use — disconnect first"),
-                ["toast.slotKeepOne"] = ("至少保留一个槽位", "Keep at least one slot"),
-                ["toast.slotInvalid"] = ("无效的槽位", "Invalid slot"),
-                ["toast.unknownType"] = ("未知的槽位类型：{0}", "Unknown slot type: {0}"),
-                ["toast.notRunning"] = ("服务未运行", "Service is not running"),
-                ["toast.noDevice"] = ("槽位 {0} 没有已连接的设备", "Slot {0} has no device"),
-                ["toast.configComing"] = ("槽位 {0} 的设置面板将在后续版本提供", "Slot {0} settings arrive in a later build"),
-                ["toast.slotSaved"] = ("槽位 {0} 的设置已保存", "Slot {0} settings saved"),
-                ["toast.slotTypeBusy"] = ("槽位 {0} 正在使用，先释放该槽位再改类型", "Slot {0} is in use — release it before changing the type"),
-                ["toast.kickOk"] = ("已踢出槽位 {0} 的连接", "Kicked the connection on slot {0}"),
-                ["toast.kickFailed"] = ("踢出失败：该连接已不存在", "Kick failed: the connection is already gone"),
-                ["toast.slotFreeHint"] = ("槽位 {0} 空闲：请在手机端选择该槽位发起连接", "Slot {0} is free — pick it on the phone"),
-                ["toast.saveFailed"] = ("设置保存失败：无法写入 {0}", "Could not write {0}"),
-                ["toast.clipboardOk"] = ("已复制", "Copied")
+                ["toast.copied"] = ("已复制 {0}", "Copied {0}", "تم نسخ {0}"),
+                ["toast.noIp"] = ("本机没有可用的 IPv4 地址", "No IPv4 address available", "لا يوجد عنوان IPv4 متاح"),
+                ["toast.copyFailed"] = ("复制失败：{0}", "Copy failed: {0}", "فشل النسخ: {0}"),
+                ["toast.portInvalid"] = ("端口必须在 1-65535 之间", "Port must be between 1 and 65535", "يجب أن يكون المنفذ بين 1 و 65535"),
+                ["toast.startFailed"] = ("启动失败：{0}", "Start failed: {0}", "فشل التشغيل: {0}"),
+                ["toast.selfCheckFailed"] = ("启动自检未通过：{0}", "Startup self-check failed: {0}", "فشل الفحص الذاتي عند البدء: {0}"),
+                ["toast.lanUnreachable"] = ("服务已启动，但局域网访问不通：{0}", "Service started, but LAN access failed: {0}", "بدأت الخدمة لكن الوصول عبر الشبكة المحلية فشل: {0}"),
+                ["toast.stopFailed"] = ("停止失败：{0}", "Stop failed: {0}", "فشل الإيقاف: {0}"),
+                ["toast.settingsSaved"] = ("设置已保存", "Settings saved", "تم حفظ الإعدادات"),
+                ["toast.settingsLocked"] = ("服务运行中不能修改端口或密码，请先停止服务", "Stop the service before changing port or password", "أوقف الخدمة قبل تغيير المنفذ أو كلمة المرور"),
+                ["toast.slotLimit"] = ("已达到槽位上限（{0}）", "Slot limit reached ({0})", "تم بلوغ الحد الأقصى للخانات ({0})"),
+                ["toast.slotOnlyLast"] = ("只能删除最后一个槽位", "Only the last slot can be removed", "يمكن حذف الخانة الأخيرة فقط"),
+                ["toast.slotBusy"] = ("槽位 {0} 正在使用，先断开设备再删除", "Slot {0} is in use — disconnect first", "الخانة {0} مستخدمة — اقطع الاتصال أولًا"),
+                ["toast.slotKeepOne"] = ("至少保留一个槽位", "Keep at least one slot", "أبقِ خانة واحدة على الأقل"),
+                ["toast.slotInvalid"] = ("无效的槽位", "Invalid slot", "خانة غير صالحة"),
+                ["toast.unknownType"] = ("未知的槽位类型：{0}", "Unknown slot type: {0}", "نوع خانة غير معروف: {0}"),
+                ["toast.notRunning"] = ("服务未运行", "Service is not running", "الخدمة ليست قيد التشغيل"),
+                ["toast.noDevice"] = ("槽位 {0} 没有已连接的设备", "Slot {0} has no device", "لا يوجد جهاز متصل في الخانة {0}"),
+                ["toast.configComing"] = ("槽位 {0} 的设置面板将在后续版本提供", "Slot {0} settings arrive in a later build", "إعدادات الخانة {0} ستتوفر في إصدار لاحق"),
+                ["toast.slotSaved"] = ("槽位 {0} 的设置已保存", "Slot {0} settings saved", "تم حفظ إعدادات الخانة {0}"),
+                ["toast.slotTypeBusy"] = ("槽位 {0} 正在使用，先释放该槽位再改类型", "Slot {0} is in use — release it before changing the type", "الخانة {0} مستخدمة — أفرغها قبل تغيير النوع"),
+                ["toast.kickOk"] = ("已踢出槽位 {0} 的连接", "Kicked the connection on slot {0}", "تم قطع الاتصال في الخانة {0}"),
+                ["toast.kickFailed"] = ("踢出失败：该连接已不存在", "Kick failed: the connection is already gone", "فشل القطع: الاتصال غير موجود"),
+                ["toast.slotFreeHint"] = ("槽位 {0} 空闲：请在手机端选择该槽位发起连接", "Slot {0} is free — pick it on the phone", "الخانة {0} متاحة — اخترها من الهاتف لبدء الاتصال"),
+                ["toast.saveFailed"] = ("设置保存失败：无法写入 {0}", "Could not write {0}", "تعذر حفظ الإعدادات: تعذرت الكتابة في {0}"),
+                ["toast.clipboardOk"] = ("已复制", "Copied", "تم النسخ")
             };
 
-        /// <summary>取一条文案；lang 不是 en 时一律按中文处理。</summary>
+        /// <summary>取一条文案；lang 不是 en / ar 时一律按中文处理。</summary>
         public static string T(string lang, string key)
         {
-            if (!Map.TryGetValue(key, out var pair))
+            if (!Map.TryGetValue(key, out var triple))
             {
                 return key;
             }
 
-            return string.Equals(lang, Languages.English, StringComparison.OrdinalIgnoreCase) ? pair.En : pair.Zh;
+            if (string.Equals(lang, Languages.English, StringComparison.OrdinalIgnoreCase))
+            {
+                return triple.En;
+            }
+
+            if (string.Equals(lang, Languages.Arabic, StringComparison.OrdinalIgnoreCase))
+            {
+                return triple.Ar;
+            }
+
+            return triple.Zh;
         }
 
         public static string T(string lang, string key, params object[] args)
@@ -167,7 +185,46 @@ namespace VGamepadWeb.WinForm.UI
         /// <summary>语言自身名字不随界面语言变化，下拉菜单直接用这个。</summary>
         public static string LanguageName(string code)
         {
-            return string.Equals(code, Languages.English, StringComparison.OrdinalIgnoreCase) ? "English" : "中文";
+            if (string.Equals(code, Languages.English, StringComparison.OrdinalIgnoreCase))
+            {
+                return "English";
+            }
+
+            if (string.Equals(code, Languages.Arabic, StringComparison.OrdinalIgnoreCase))
+            {
+                return "العربية";
+            }
+
+            return "中文";
+        }
+
+        /// <summary>
+        /// 该语言是否从右往左读。
+        /// 阿语是 RTL：文字要贴右排，布局也要镜像。
+        /// </summary>
+        public static bool IsRtl(string lang)
+        {
+            return string.Equals(lang, Languages.Arabic, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 给一段文案套上 Unicode 方向标记（U+202B RLE + U+202C PDF）。
+        ///
+        /// 用在哪：Windows 通知气泡这类由系统渲染的界面。气泡的排版方向取决于
+        /// Windows 自己的语言设置，应用没法直接指定 —— 方向标记是唯一的办法：
+        /// 它把这段文字显式标成「从右往左」，系统就会按阿语排。
+        ///
+        /// 标记本身不占位也不画出笔画（实测 GDI+ 与 TextRenderer 的墨迹量完全相同），
+        /// 所以加不加在视觉上只差排版方向。
+        /// </summary>
+        public static string WithDirectionMarks(string text, string lang)
+        {
+            if (string.IsNullOrEmpty(text) || !IsRtl(lang))
+            {
+                return text;
+            }
+
+            return "\u202B" + text + "\u202C";
         }
 
         private static string NormalizeType(string type)
@@ -177,6 +234,19 @@ namespace VGamepadWeb.WinForm.UI
 
         public static string IpLabel(string lang, string kind)
         {
+            if (string.Equals(lang, Languages.Arabic, StringComparison.OrdinalIgnoreCase))
+            {
+                switch (kind)
+                {
+                    case "wifi":
+                        return "Wi-Fi";
+                    case "ethernet":
+                        return "إيثرنت";
+                    default:
+                        return "أخرى";
+                }
+            }
+
             bool en = string.Equals(lang, Languages.English, StringComparison.OrdinalIgnoreCase);
             switch (kind)
             {

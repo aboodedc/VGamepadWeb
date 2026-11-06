@@ -77,6 +77,9 @@ namespace VGamepadWeb.WinForm.UI
         public const string Chinese = "zh";
         public const string English = "en";
 
-        public static readonly string[] All = { Chinese, English };
+        /// <summary>阿拉伯语：从右往左读，渲染时要按 RTL 处理。</summary>
+        public const string Arabic = "ar";
+
+        public static readonly string[] All = { Chinese, English, Arabic };
     }
 }
