@@ -60,7 +60,6 @@ namespace VGamepadWeb.WinForm.UI
                 ["slot.waiting"] = ("等待手机连接", "Waiting for phone", "في انتظار الهاتف"),
                 ["slot.connected"] = ("已连接", "Connected", "متصل"),
                 ["slot.idle"] = ("空闲", "Idle", "متاح"),
-                ["slot.latency"] = ("当前延迟", "Latency", "زمن الاستجابة الحالي"),
                 ["slot.disconnect"] = ("断开连接", "Disconnect", "قطع الاتصال"),
                 ["slot.delete"] = ("删除", "Remove", "حذف"),
                 ["slot.assign"] = ("等待连接…", "Waiting…", "في انتظار الاتصال…"),

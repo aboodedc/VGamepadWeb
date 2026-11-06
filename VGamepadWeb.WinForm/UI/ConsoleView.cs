@@ -87,7 +87,8 @@ namespace VGamepadWeb.WinForm.UI
                 ControlStyles.OptimizedDoubleBuffer
                 | ControlStyles.AllPaintingInWmPaint
                 | ControlStyles.UserPaint
-                | ControlStyles.ResizeRedraw,
+                | ControlStyles.ResizeRedraw
+                | ControlStyles.Selectable,
                 true);
 
             BackColor = Theme.Page;
@@ -223,8 +224,8 @@ namespace VGamepadWeb.WinForm.UI
 
                     sb.Append(slot.Slot).Append(':').Append(slot.Occupied ? '1' : '0').Append(slot.Type).Append(':')
                       .Append(slot.ControllerId).Append(':')
-                      .Append(slot.LatencyMs.HasValue ? slot.LatencyMs.Value : -1)
-                      .Append(';');
+                      .Append(slot.DeviceName).Append(':')
+                      .Append(slot.RemoteIp)                      .Append(';');
                 }
             }
 
@@ -355,7 +356,11 @@ namespace VGamepadWeb.WinForm.UI
                 BackColor = Theme.Panel,
                 ForeColor = Theme.Text,
                 ShortcutsEnabled = true,
-                TextAlign = HorizontalAlignment.Left
+                TextAlign = HorizontalAlignment.Left,
+
+                // 输入框一律不进 Tab 序列：窗体激活时系统会把初始焦点给第一个可 Tab 的
+                // 子控件，那样端口框会莫名其妙地亮起光标。输入框靠点击获得焦点。
+                TabStop = false
             };
         }
 
@@ -765,9 +770,10 @@ namespace VGamepadWeb.WinForm.UI
                 box.Enabled = !locked;
             }
 
-            if (box.TabStop == locked)
+            // TabStop 恒为 false：输入框只靠点击获得焦点，不参与 Tab 键遍历。
+            if (box.TabStop)
             {
-                box.TabStop = !locked;
+                box.TabStop = false;
             }
 
             Color back = locked ? SystemColors.Control : Theme.Panel;
@@ -985,7 +991,10 @@ namespace VGamepadWeb.WinForm.UI
                 // 空闲态：内容在「顶行以下」这块区域里真正垂直居中（30..140 的中线是 85）。
                 card.GlyphRect = R(f, cardX + cardPad, cardY + 69f, 32f, 32f);
                 card.HintRect = R(f, cardX + cardPad + 40f, cardY + 69f, cardInner - 40f, 32f);
-                card.LatencyRect = R(f, cardX + 194f, cardY + 88f, 94f, 36f);
+
+                // 右下角是「谁连着」：上行设备名、下行 IP。断开按钮占左侧 84px，剩下这段归它。
+                card.DeviceRect = R(f, cardX + 108f, cardY + 88f, 166f, 18f);
+                card.AddressRect = R(f, cardX + 108f, cardY + 106f, 166f, 16f);
 
                 if (occupied)
                 {
@@ -1705,31 +1714,29 @@ namespace VGamepadWeb.WinForm.UI
 
             DrawButton(g, f, card.PrimaryButton, Strings.T(lang, "slot.disconnect"), 12.5f, ButtonStyle.Danger, "slot" + card.Index + ":disconnect", true);
 
-            // 延迟：数值在上、标签在下，右对齐成一列；<20ms 绿、≥20ms 暗黄、无数据就是破折号。
-            int? latency = card.Item != null ? card.Item.LatencyMs : null;
-            string latencyValue = latency.HasValue ? latency.Value + " ms" : Dash;
-            Color latencyColor = latency.HasValue ? (latency.Value >= 20 ? Theme.Amber : Theme.Green) : Theme.Faint;
+            // 谁连着：上行设备名、下行 IP。都没有就显示破折号（老客户端不报设备名）。
+            string deviceName = card.Item != null ? card.Item.DeviceName : string.Empty;
+            string address = card.Item != null ? card.Item.RemoteIp : string.Empty;
 
-            using (Font valueFont = Theme.Mono(13f * s, FontStyle.Bold))
-            using (Font labelFont = Theme.Sans(10f * s))
+            using (Font deviceFont = Theme.Sans(11.5f * s, FontStyle.Bold))
+            using (Font addressFont = Theme.Mono(10.5f * s))
             {
-                float half = Snap(card.LatencyRect.Height / 2f);
                 DrawText(
                     g,
-                    latencyValue,
-                    valueFont,
-                    latencyColor,
-                    Snap(new RectangleF(card.LatencyRect.Left, card.LatencyRect.Top, card.LatencyRect.Width, half)),
+                    string.IsNullOrEmpty(deviceName) ? Dash : deviceName,
+                    deviceFont,
+                    Theme.Text,
+                    card.DeviceRect,
                     StringAlignment.Far,
                     StringAlignment.Center,
-                    false);
+                    true);
 
                 DrawText(
                     g,
-                    Strings.T(lang, "slot.latency"),
-                    labelFont,
+                    string.IsNullOrEmpty(address) ? Dash : address,
+                    addressFont,
                     Theme.Muted,
-                    Snap(new RectangleF(card.LatencyRect.Left, card.LatencyRect.Top + half, card.LatencyRect.Width, half)),
+                    card.AddressRect,
                     StringAlignment.Far,
                     StringAlignment.Center,
                     false);
@@ -2398,9 +2405,10 @@ namespace VGamepadWeb.WinForm.UI
             public RectangleF TypeRect;
             public RectangleF MetaRect;
             public RectangleF FooterLine;
-            public RectangleF LatencyRect;
             public RectangleF GlyphRect;
             public RectangleF HintRect;
+            public RectangleF DeviceRect;
+            public RectangleF AddressRect;
             public RectangleF PrimaryButton;
         }
 

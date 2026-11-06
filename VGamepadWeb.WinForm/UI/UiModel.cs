@@ -22,11 +22,14 @@ namespace VGamepadWeb.WinForm.UI
         /// <summary>设备实际类型："xbox" / "ds4"；空槽给空串。</summary>
         public string Type { get; set; } = string.Empty;
 
+        /// <summary>手机端自报的设备名（机型）；空槽或老客户端为空串。</summary>
+        public string DeviceName { get; set; } = string.Empty;
+
+        /// <summary>手机端的局域网 IP；空槽或老客户端为空串。</summary>
+        public string RemoteIp { get; set; } = string.Empty;
+
         /// <summary>0-based ControllerIndex；空槽为 -1。</summary>
         public int ControllerId { get; set; } = -1;
-
-        /// <summary>本轮没有 RTT 来源，恒为 null，界面显示 —。</summary>
-        public int? LatencyMs { get; set; }
     }
 
     public sealed class IpItem

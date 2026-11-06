@@ -42,7 +42,8 @@ namespace VGamepadWeb.Core
             int sensitivity,
             string clientPassword = "",
             string clientId = "",
-            int? slot = null)
+            int? slot = null,
+            string deviceName = "")
         {
             // 校验密码：与服务器设置不一致直接踢掉，不进入任何协商
             if (_serverPassword != "" && clientPassword != _serverPassword)
@@ -63,7 +64,7 @@ namespace VGamepadWeb.Core
 
             // 占位必须在 WebRTC 协商之前：占不到就回稳定码并停手，绝不建立 DataChannel。
             if (!_gamepadManager.TryClaimSlot(
-                    Context.ConnectionId, slot, clientId, remoteIp, type, enableVib, sensitivity,
+                    Context.ConnectionId, slot, clientId, remoteIp, deviceName, type, enableVib, sensitivity,
                     out int slotIndex, out string reason))
             {
                 ServerLog.Warn($"占位失败：{reason}（连接 {Context.ConnectionId}）");

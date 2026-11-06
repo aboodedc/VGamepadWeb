@@ -35,6 +35,36 @@ const getClientId = () => {
   return id;
 };
 
+/**
+ * 从 User-Agent 里挑出设备名，报给服务端显示在槽位卡上。
+ * 认得出 iPhone / iPad / Android 机型就报机型，认不出就报浏览器名，
+ * 总之给一个人能看懂的名字，而不是一串 UA 原文。
+ */
+const getDeviceName = (): string => {
+  const ua = navigator.userAgent || '';
+
+  // iOS / iPadOS：机型在 UA 里（iPhone / iPad），固件版本单独一段。
+  const ios = ua.match(/(iPhone|iPad|iPod)\s*(?:OS\s*([0-9_]+))?/);
+  if (ios) {
+    const version = ios[2] ? ` ${ios[2].replace(/_/g, '.')}` : '';
+    return `${ios[1]}${version}`;
+  }
+
+  // Android：机型在 "Android xx; <机型>" 这一段。
+  const android = ua.match(/Android\s*[0-9.]*;\s*([^;)]+)/);
+  if (android) {
+    return android[1].trim();
+  }
+
+  // 桌面浏览器：退到浏览器名。
+  const browser = ua.match(/(Edg|OPR|Chrome|Firefox|Safari)\/?\s*([0-9.]*)/);
+  if (browser) {
+    return browser[1] === 'Safari' ? 'Safari' : browser[1];
+  }
+
+  return 'Device';
+};
+
 export const useGamepadConnection = ({
   serverUrl, serverPassword = '', enableVib, sensitivity, controllerType, t
 }: UseGamepadConnectionProps) => {
@@ -192,7 +222,11 @@ export const useGamepadConnection = ({
       await pc.setLocalDescription(offer);
       // slot 传 null：手柄位由服务端分配，用户不选。
       // controllerType 是自己选的手柄类型（0 = Xbox 360，1 = DualShock 4），服务端照办。
-      await c.invoke('SendOffer', offer.sdp, controllerType, enableVib, sensitivity, serverPassword, getClientId(), null);
+      // deviceName 让服务端在槽位卡上显示「谁连着」。
+      await c.invoke(
+        'SendOffer', offer.sdp, controllerType, enableVib, sensitivity,
+        serverPassword, getClientId(), null, getDeviceName()
+      );
     } catch (err) {
       console.error(err);
       closePeer();

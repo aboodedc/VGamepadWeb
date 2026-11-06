@@ -75,6 +75,18 @@ namespace VGamepadWeb.WinForm
             Load += Form1_Load;
         }
 
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+
+            // 初始焦点落在自绘容器上，不要停在端口/密码框：服务刚起来时端口多半不用改，
+            // 让光标在那儿闪只会让人以为漏改了配置。想改端口/密码用鼠标点过去即可。
+            if (ActiveControl is TextBox && !console.ContainsFocus)
+            {
+                console.Focus();
+            }
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
             _refreshPump = new System.Windows.Forms.Timer { Interval = 500 };
@@ -192,7 +204,8 @@ namespace VGamepadWeb.WinForm
                     Occupied = occupied,
                     Type = occupied ? MapCoreType(liveSlot.ControllerType) : string.Empty,
                     ControllerId = occupied ? liveSlot.Slot : -1,
-                    LatencyMs = null
+                    DeviceName = occupied ? liveSlot.DeviceName ?? string.Empty : string.Empty,
+                    RemoteIp = occupied ? liveSlot.RemoteIp ?? string.Empty : string.Empty
                 });
             }
 

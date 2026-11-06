@@ -38,9 +38,11 @@ namespace VGamepadWeb.Core
     /// <summary>
     /// GetSnapshot() 的只读投影。Slot 是 0-based 的 ControllerIndex（等于 XInput 槽位），
     /// 展示号 = Slot + 1 由 WinForm 负责。ControllerType 是该槽位当前设备的实际类型。
+    /// DeviceName / RemoteIp 是手机端自报的设备名与局域网 IP，空槽为 null。
     /// </summary>
     public sealed record GamepadSnapshot(
-        int Slot, string? ControllerType, bool Occupied, string? ConnectionId);
+        int Slot, string? ControllerType, bool Occupied, string? ConnectionId,
+        string? DeviceName, string? RemoteIp);
 
     public class GamepadManager : IDisposable
     {
@@ -58,13 +60,18 @@ namespace VGamepadWeb.Core
             /// <summary>该槽位当前设备的类型；设备建好之后才有值，空槽为 null。</summary>
             public TypeController? Type;
 
+            /// <summary>手机端自报的设备名（浏览器 User-Agent 解析出来的机型）；空槽为 null。</summary>
+            public string? DeviceName;
+
+            /// <summary>手机端的局域网 IP（认领人地址，用于「靠 IP 认回槽位」）；空槽为 null。</summary>
+            public string? RemoteIp;
+
             public string? OwnerConnectionId;
 
             // 「上一次是谁坐在这个槽位上」。断开不清，重连才能认回同一台设备。
             // 只在本次进程里记（每次运行单独记录），服务重启就没了。
             // ClientId 是手机端 localStorage 里持久化的设备码，比 IP 稳；IP 是拿不到设备码时的退路。
             public string? ClientId;
-            public string? RemoteIp;
         }
 
         public event Action<string, byte, byte> OnVibrationReceived;
@@ -178,6 +185,7 @@ namespace VGamepadWeb.Core
             int? requestedSlot,
             string? clientId,
             string? remoteIp,
+            string? deviceName,
             TypeController controllerType,
             bool enableVib,
             int sensitivity,
@@ -279,6 +287,11 @@ namespace VGamepadWeb.Core
                 if (!string.IsNullOrEmpty(remoteIp))
                 {
                     slot.RemoteIp = remoteIp;
+                }
+
+                if (!string.IsNullOrEmpty(deviceName))
+                {
+                    slot.DeviceName = deviceName;
                 }
 
                 _controllers[connectionId] = new GamepadSettings(
@@ -565,7 +578,9 @@ namespace VGamepadWeb.Core
                         slot,
                         item.Type?.ToString(),
                         item.OwnerConnectionId != null,
-                        item.OwnerConnectionId));
+                        item.OwnerConnectionId,
+                        item.DeviceName,
+                        item.RemoteIp));
                 }
             }
 
