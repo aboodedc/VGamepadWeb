@@ -1013,7 +1013,7 @@ namespace VGamepadWeb.WinForm.UI
                     // 空闲卡：手柄线稿 + 一句提示横排，不再居中留一大片空白。
                     card.PrimaryButton = RectangleF.Empty;
 
-                    // 设备还常驻着才给「删除」：删的是这台虚拟手柄，不是槽位本身。
+                    // 设备还常驻着才给「卸载」：卸载的是这台虚拟手柄，不是槽位本身。
                     // 提示文字让出这段宽度，按钮贴在右下角（RTL 下由 R() 镜像到左下）。
                     if (hasDevice)
                     {
@@ -1643,7 +1643,7 @@ namespace VGamepadWeb.WinForm.UI
                 // 空闲位：手柄线稿在左、提示在右，整行在顶行以下垂直居中。
                 DrawGamepadGlyph(g, card.GlyphRect, Theme.Muted, s);
 
-                // 有删除键时提示只剩 152px 宽，阿语/英语原样排会顶出去，按实际宽度缩字号。
+                // 有卸载键时提示只剩 152px 宽，阿语/英语原样排会顶出去，按实际宽度缩字号。
                 string hint = Strings.T(lang, card.HasDevice ? "slot.waiting" : "slot.waitingDevice");
                 using (Font hintFont = CreateFittedFont(false, 12.5f, s, FontStyle.Regular, hint, card.HintRect.Width, 10f))
                 {

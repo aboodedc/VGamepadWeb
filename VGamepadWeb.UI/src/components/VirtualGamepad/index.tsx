@@ -92,14 +92,35 @@ const VirtualGamepadInner: React.FC = () => {
     };
   }, []);
 
+  // 全屏，并尽量顺手锁一次横屏。
+  // 能锁的只有 Android Chrome 这类：orientation.lock 必须先进全屏才生效；
+  // iOS Safari 既没有元素级 requestFullscreen，也没有 orientation.lock —— 那边锁不住，
+  // 只能靠连接门上那句「建议横屏」让用户自己转。
   const toggleFullscreen = async () => {
     try {
       if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+
+        const orientation = (screen as unknown as {
+          orientation?: { lock?: (orientation: string) => Promise<void> };
+        }).orientation;
+
+        try {
+          await orientation?.lock?.('landscape');
+        } catch {
+          // 浏览器不认这个方向，或者当前不在全屏：继续，不打断用户。
+        }
       } else {
         if (document.exitFullscreen) {
           await document.exitFullscreen();
         }
+
+        // 退出全屏要解除锁定，否则用户回到页面还是被按在横屏。
+        (screen as unknown as {
+          orientation?: { unlock?: () => void };
+        }).orientation?.unlock?.();
       }
     } catch (err) {
       console.error('Fullscreen error:', err);

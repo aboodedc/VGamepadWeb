@@ -1097,6 +1097,14 @@ button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
   margin-bottom: 20px;
 }
 
+.gp-gate-hint {
+  margin: -12px 0 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text-dim);
+}
+
 .gp-gate-notice {
   margin-bottom: 16px;
   padding: 10px 12px;

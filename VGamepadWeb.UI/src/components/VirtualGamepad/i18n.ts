@@ -54,6 +54,7 @@ const ar = {
 
     // Connection gate (未连接时的全屏覆盖层)
     gateTitle: 'الاتصال بالجهاز',
+    gateLandscape: 'يُفضّل الاستخدام أفقيًا — أدر الهاتف أو اضغط «شاشة كاملة»',
 
     // Stable reason codes from the server
     reasonSlotTaken: 'هذا المقعد مشغول، اختر مقعداً آخر',
@@ -149,6 +150,7 @@ const en = {
 
     // Connection gate (未连接时的全屏覆盖层)
     gateTitle: 'Connect to device',
+    gateLandscape: 'Landscape recommended — rotate the phone, or tap Fullscreen',
 
     // Stable reason codes from the server
     reasonSlotTaken: 'This slot is in use, pick another one',
@@ -247,6 +249,7 @@ const zh = {
 
   // Connection gate (未连接时的全屏覆盖层)
   gateTitle: '连接设备',
+  gateLandscape: '建议横屏使用 —— 旋转手机，或点「全屏」自动转过来',
 
   // Stable reason codes from the server
   reasonSlotTaken: '该槽位已被占用，请选其他槽位',

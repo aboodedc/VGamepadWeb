@@ -195,7 +195,7 @@ namespace VGamepadWeb.WinForm
 
             // 固定 4 条，顺序即槽位号 1..4；空槽 Type 空串、ControllerId -1。
             // Type 反映的是「这个槽位上有没有设备」而不是「有没有人连着」：
-            // 设备常驻，空闲槽也可能挂着上一台，界面靠它决定要不要显示「删除」。
+            // 设备常驻，空闲槽也可能挂着上一台，界面靠它决定要不要显示「卸载」。
             for (int slot = 1; slot <= SlotCount; slot++)
             {
                 int index = slot - 1;

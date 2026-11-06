@@ -48,6 +48,9 @@ export const ConnectionGate: React.FC<ConnectionGateProps> = ({
       <div className="gp-gate-panel">
         <h2 className="gp-gate-title">{t.gateTitle}</h2>
 
+        {/* 手柄页本来就是横向铺开更好用；能不能真的转过去由浏览器决定，这里先把话说明白。 */}
+        <p className="gp-gate-hint">{t.gateLandscape}</p>
+
         {notice && <div className="gp-gate-notice">{notice}</div>}
 
         <label className="gp-gate-label">{t.password}</label>
