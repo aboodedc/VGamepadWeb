@@ -218,7 +218,9 @@ namespace VGamepadWeb.WinForm.UI
 
                     sb.Append(slot.Slot).Append(':').Append(slot.Occupied ? '1' : '0').Append(slot.Type).Append(':')
                       .Append(slot.ControllerId).Append(':')
-                      .Append(slot.LatencyMs.HasValue ? slot.LatencyMs.Value : -1)
+                      .Append(slot.LatencyMs.HasValue ? slot.LatencyMs.Value : -1).Append(':')
+                      .Append(slot.Name).Append(':')
+                      .Append(slot.Locked ? '1' : '0')
                       .Append(';');
                 }
             }
@@ -967,6 +969,10 @@ namespace VGamepadWeb.WinForm.UI
                     card.PrimaryButton = RectangleF.Empty;
                     card.SecondaryButton = RectangleF.Empty;
                     card.ShowSecondary = false;
+
+                    // 整张卡可点：空闲槽位也能预配置类型 / 名称 / 锁定。
+                    Hit cardHit = AddHit(f, card.Bounds, "slot" + i + ":card", HitAction.Configure, true);
+                    cardHit.Slot = slotNumber;
                 }
 
                 f.Cards.Add(card);
@@ -1438,7 +1444,11 @@ namespace VGamepadWeb.WinForm.UI
             bool xbox = IsXboxBrand(card.Brand);
 
             // 已连接 = 按手柄品牌铺浅底；空闲 = 略深于面板的灰底，跟外层白面板分得开。
-            Color back = card.Occupied ? (xbox ? Theme.XboxBg : Theme.PsBg) : Theme.CardIdle;
+            // 空闲卡整张可点，hover 换成按钮的悬停灰，提示「这里能点」。
+            bool cardHover = !card.Occupied && IsHover("slot" + card.Index + ":card");
+            Color back = card.Occupied
+                ? (xbox ? Theme.XboxBg : Theme.PsBg)
+                : (cardHover ? Theme.ButtonHover : Theme.CardIdle);
             Color border = card.Occupied ? (xbox ? Theme.XboxLine : Theme.PsLine) : Theme.Line;
 
             Theme.FillRoundRect(g, bounds, Theme.RadiusCard * s, back);
@@ -1457,19 +1467,44 @@ namespace VGamepadWeb.WinForm.UI
                     false);
             }
 
-            string title = Strings.T(lang, "slot.player", card.SlotNumber);
-            using (Font titleFont = CreateFittedFont(false, 13f, s, FontStyle.Bold, title, card.TitleRect.Width, 11f))
+            // 标题：配置了名字就显示名字，否则保持「玩家 N」；锁定槽位在后面追加一个可见标识。
+            string title = card.Item != null && !string.IsNullOrWhiteSpace(card.Item.Name)
+                ? card.Item.Name
+                : Strings.T(lang, "slot.player", card.SlotNumber);
+            string lockLabel = card.Item != null && card.Item.Locked ? Strings.T(lang, "slot.locked") : null;
+
+            using (Font lockFont = lockLabel != null ? Theme.Sans(11.5f * s, FontStyle.Bold) : null)
             {
-                float titleWidth = Math.Min(Measure(title, titleFont), card.TitleRect.Width);
-                DrawText(
-                    g,
-                    title,
-                    titleFont,
-                    Theme.Text,
-                    Snap(new RectangleF(card.TitleRect.Left, card.TitleRect.Top, titleWidth + Snap(2f * s), card.TitleRect.Height)),
-                    StringAlignment.Near,
-                    StringAlignment.Center,
-                    false);
+                float lockWidth = lockLabel != null ? Measure(lockLabel, lockFont) + Snap(6f * s) : 0f;
+                float titleMax = Math.Max(0f, card.TitleRect.Width - lockWidth);
+
+                using (Font titleFont = CreateFittedFont(false, 13f, s, FontStyle.Bold, title, titleMax, 11f))
+                {
+                    float titleWidth = Math.Min(Measure(title, titleFont), titleMax);
+                    DrawText(
+                        g,
+                        title,
+                        titleFont,
+                        Theme.Text,
+                        Snap(new RectangleF(card.TitleRect.Left, card.TitleRect.Top, titleWidth + Snap(2f * s), card.TitleRect.Height)),
+                        StringAlignment.Near,
+                        StringAlignment.Center,
+                        true);
+
+                    if (lockLabel != null)
+                    {
+                        float lockLeft = Snap(card.TitleRect.Left + titleWidth + Snap(6f * s));
+                        DrawText(
+                            g,
+                            lockLabel,
+                            lockFont,
+                            Theme.Amber,
+                            Snap(new RectangleF(lockLeft, card.TitleRect.Top, Math.Max(0f, card.TitleRect.Right - lockLeft), card.TitleRect.Height)),
+                            StringAlignment.Near,
+                            StringAlignment.Center,
+                            false);
+                    }
+                }
             }
 
             DrawCardState(g, f, card);

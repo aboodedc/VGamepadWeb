@@ -9,7 +9,7 @@ namespace VGamepadWeb.WinForm
     public partial class Form1 : Form
     {
         /// <summary>槽位固定 4 个，不增不减，与 Core 的 _availableIndexes 长度一致。</summary>
-        private const int SlotCount = 4;
+        private const int SlotCount = AppSettings.SlotCount;
 
         // toast 等级由界面层决定观感，这里只传稳定键。
         private const string ToastInfo = "info";
@@ -18,8 +18,11 @@ namespace VGamepadWeb.WinForm
         private const string ToastError = "error";
 
         // 槽位卡的设备类型稳定键；显示文案由 Strings.TypeLabel 按语言出。
-        private const string DeviceXbox = "xbox";
-        private const string DeviceDualShock4 = "ds4";
+        private const string DeviceXbox = SlotTypes.Xbox;
+        private const string DeviceDualShock4 = SlotTypes.DualShock4;
+
+        /// <summary>踢出原因固定值，手机端按它显示提示。</summary>
+        private const string KickReason = "kicked_by_admin";
 
         private readonly ServerRunner _server = new ServerRunner();
         private readonly AppSettings _settings = AppSettings.Load();
@@ -170,19 +173,20 @@ namespace VGamepadWeb.WinForm
                 });
             }
 
-            var occupiedBySlot = new Dictionary<int, GamepadSnapshot>();
+            var bySlot = new Dictionary<int, GamepadSnapshot>();
             foreach (GamepadSnapshot item in snapshot)
             {
-                if (item.Occupied)
-                {
-                    occupiedBySlot[item.Slot] = item;
-                }
+                bySlot[item.Slot] = item;
             }
 
             // 固定 4 条，顺序即槽位号 1..4；空槽 Type 空串、ControllerId -1。
+            // Name / Locked 是槽位配置：服务未启动时读落盘设置，启动后以 Core 快照为准。
             for (int slot = 1; slot <= SlotCount; slot++)
             {
-                bool occupied = occupiedBySlot.TryGetValue(slot - 1, out GamepadSnapshot liveSlot);
+                int index = slot - 1;
+                bool hasLive = bySlot.TryGetValue(index, out GamepadSnapshot liveSlot);
+                bool occupied = hasLive && liveSlot.Occupied;
+                SlotSetting configured = SlotSettingAt(index);
 
                 model.Slots.Add(new SlotItem
                 {
@@ -190,7 +194,9 @@ namespace VGamepadWeb.WinForm
                     Occupied = occupied,
                     Type = occupied ? MapCoreType(liveSlot.ControllerType) : string.Empty,
                     ControllerId = occupied ? liveSlot.Slot : -1,
-                    LatencyMs = null
+                    LatencyMs = null,
+                    Name = hasLive ? liveSlot.Name ?? string.Empty : configured.Name,
+                    Locked = hasLive ? liveSlot.Locked : configured.Locked
                 });
             }
 
@@ -281,6 +287,9 @@ namespace VGamepadWeb.WinForm
                 CurrentState = ServerPhase.Starting;
 
                 await _server.StartServerAsync(_settings.Port, _settings.Password);
+
+                // 服务起来后立刻把落盘的槽位配置灌进去：类型 / 名称 / 锁定都在设备创建之前生效。
+                _server.ApplySlotConfig(BuildSlotConfigs());
 
                 _startedAt = DateTimeOffset.Now;
                 CurrentState = ServerPhase.Running;
@@ -453,6 +462,10 @@ namespace VGamepadWeb.WinForm
             }
         }
 
+        /// <summary>
+        /// 打开槽位设置面板。空闲槽位也能进来预配置类型 / 名称 / 锁定（服务未启动时只落盘，
+        /// 下次启动由 ApplySlotConfig 灌进 Core）；已占用槽位额外提供「踢出连接」。
+        /// </summary>
         private void OnConfigureSlot(int slot)
         {
             if (slot < 1 || slot > SlotCount)
@@ -461,14 +474,137 @@ namespace VGamepadWeb.WinForm
                 return;
             }
 
-            // 空闲卡已经不再触发本事件；真收到空闲槽号就静默返回，不再多嘴提示。
-            bool occupied = GetGamepadSnapshot().Any(item => item.Slot == slot - 1 && item.Occupied);
-            if (!occupied)
+            int index = slot - 1;
+            SlotSetting configured = SlotSettingAt(index);
+            GamepadSnapshot live = FindSnapshot(index);
+            bool occupied = live != null && live.Occupied;
+            string connectionId = live != null ? live.ConnectionId ?? string.Empty : string.Empty;
+
+            // 运行态以 Core 快照为准；服务未启动或快照缺项时回落落盘设置。
+            TypeController currentType = ParseCoreType(live != null ? live.ControllerType : configured.Type);
+            string currentName = live != null ? live.Name ?? configured.Name : configured.Name;
+            bool currentLocked = live != null ? live.Locked : configured.Locked;
+
+            using var dialog = new SlotSettingsDialog(
+                _settings.Language,
+                slot,
+                currentType,
+                currentName,
+                currentLocked,
+                occupied,
+                connectionId,
+                KickConnection);
+
+            if (dialog.ShowDialog(this) != DialogResult.OK)
             {
                 return;
             }
 
-            ShowToast("toast.configComing", ToastInfo, slot);
+            GamepadManager gamepadManager = _server.GamepadManager;
+
+            // 改类型会重建该槽设备，只对空闲槽生效；失败时提示而不是静默。
+            bool typeApplied = true;
+            if (dialog.SelectedType != currentType)
+            {
+                typeApplied = gamepadManager == null || gamepadManager.SetSlotType(index, dialog.SelectedType);
+                if (!typeApplied)
+                {
+                    ShowToast("toast.slotTypeBusy", ToastWarn, slot);
+                }
+            }
+
+            if (gamepadManager != null)
+            {
+                gamepadManager.SetSlotName(index, dialog.SlotName);
+                gamepadManager.SetSlotLocked(index, dialog.SlotLocked);
+            }
+
+            if (typeApplied)
+            {
+                configured.Type = TypeToKey(dialog.SelectedType);
+            }
+
+            configured.Name = dialog.SlotName;
+            configured.Locked = dialog.SlotLocked;
+            PersistSettings();
+            RefreshUi();
+
+            // 踢出已经在对话框里执行过，结果用它带回的成功标记提示；不再叠加「已保存」。
+            if (dialog.KickRequested)
+            {
+                ShowToast(dialog.KickSucceeded ? "toast.kickOk" : "toast.kickFailed", dialog.KickSucceeded ? ToastSuccess : ToastError, slot);
+                return;
+            }
+
+            ShowToast("toast.slotSaved", ToastSuccess, slot);
+        }
+
+        private bool KickConnection(string connectionId)
+        {
+            return _server.Kick(connectionId, KickReason);
+        }
+
+        private GamepadSnapshot FindSnapshot(int index)
+        {
+            GamepadManager gamepadManager = _server.GamepadManager;
+            if (gamepadManager == null)
+            {
+                return null;
+            }
+
+            foreach (GamepadSnapshot item in gamepadManager.GetSnapshot())
+            {
+                if (item.Slot == index)
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>NormalizeSlots 保证恒有 4 条；这里再兜一层，槽位配置永远有值可用。</summary>
+        private SlotSetting SlotSettingAt(int index)
+        {
+            if (index >= 0 && index < _settings.Slots.Count)
+            {
+                return _settings.Slots[index];
+            }
+
+            return new SlotSetting { Index = index };
+        }
+
+        /// <summary>落盘设置的 4 条槽位 → Core 的 SlotConfig，槽位号 0-based。</summary>
+        private SlotConfig[] BuildSlotConfigs()
+        {
+            var configs = new SlotConfig[SlotCount];
+            for (int index = 0; index < SlotCount; index++)
+            {
+                SlotSetting setting = SlotSettingAt(index);
+                configs[index] = new SlotConfig(
+                    index,
+                    ParseCoreType(setting.Type),
+                    setting.Name ?? string.Empty,
+                    setting.Locked);
+            }
+
+            return configs;
+        }
+
+        /// <summary>Core 的枚举名与落盘稳定键都接受；未知一律回落 Xbox 360。</summary>
+        private static TypeController ParseCoreType(string type)
+        {
+            return type switch
+            {
+                nameof(TypeController.DualShock4) => TypeController.DualShock4,
+                DeviceDualShock4 => TypeController.DualShock4,
+                _ => TypeController.Xbox360
+            };
+        }
+
+        private static string TypeToKey(TypeController type)
+        {
+            return type == TypeController.DualShock4 ? DeviceDualShock4 : DeviceXbox;
         }
 
         // ==========================================
