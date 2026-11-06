@@ -30,6 +30,20 @@ namespace VGamepadWeb.WinForm
             AppSettings settings = AppSettings.Load();
             string language = settings.Language;
 
+            // 单实例：两个 host 会抢同一个端口、抢同一份 settings.json，托盘里还会并排两个图标。
+            // 拿不到就退出（句柄活到 Main 结束，也就是进程退出）。
+            using Mutex singleInstance = new Mutex(true, "VGamepadWeb.SingleInstance", out bool createdNew);
+            if (!createdNew)
+            {
+                MessageBox.Show(
+                    Strings.WithDirectionMarks(Strings.T(language, "dialog.alreadyRunning.text"), language),
+                    Strings.WithDirectionMarks(Strings.T(language, "dialog.alreadyRunning.title"), language),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                ServerLog.Warn("已有实例在运行，本次启动退出");
+                return;
+            }
+
             // 🔥 فحص وجود تعريف الـ ViGEmBus وتثبيته تلقائياً إذا كان مفقوداً
             if (!DriverHelper.EnsureViGEmDriverInstalled())
             {

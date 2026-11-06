@@ -266,14 +266,31 @@ namespace VGamepadWeb.Core
 
                 GamepadSlot slot = _slots[assigned];
 
-                // 设备常驻：首次认领时按客户端选的类型建设备，之后同一类型直接复用；
-                // 类型变了就得重建 —— Windows 里 Xbox 手柄和 DS4 是两种不同的设备。
-                if (slot.Device == null || slot.Type != controllerType)
+                // 设备常驻：首次认领时按客户端选的类型建设备，之后同一类型直接复用。
+                // 类型变了（换台手机连进来、或同一台手机换了类型重连）就在原槽位拆旧建新 ——
+                // 必须先拆再建：ViGEm 同时挂着的虚拟设备有限，旧设备还占着就建新的会凑出第 5 个 target。
+                if (slot.Device != null && slot.Type != controllerType)
                 {
                     IVirtualGamepad? previous = slot.Device;
-                    slot.Device = CreateGamepad(assigned, controllerType);
-                    slot.Type = controllerType;
+                    slot.Device = null;
+                    slot.Type = null;
                     DisposeDevice(previous);
+                }
+
+                if (slot.Device == null)
+                {
+                    try
+                    {
+                        slot.Device = CreateGamepad(assigned, controllerType);
+                        slot.Type = controllerType;
+                    }
+                    catch (Exception ex)
+                    {
+                        // 建不出来就把槽位留干净，回稳定码，别让异常穿出 hub。
+                        ServerLog.Error($"槽位 {assigned} 创建虚拟手柄失败", ex);
+                        reason = "device_create_failed";
+                        return false;
+                    }
                 }
 
                 slot.OwnerConnectionId = connectionId;
@@ -394,6 +411,41 @@ namespace VGamepadWeb.Core
             ResetNeutral(slotIndex);
             ServerLog.Info($"槽位 {slotIndex} 已释放（连接 {connectionId}）");
             RaiseSlotsChanged();
+        }
+
+        /// <summary>
+        /// 卸载槽位上常驻的虚拟设备（管理面「删除」用）。
+        /// 只在槽位空闲时允许：有人坐着的时候删设备，等于把人家正在用的手柄拔掉。
+        /// 认人信息（ClientId / RemoteIp / DeviceName）不动 —— 删的是设备，不是这个槽位的记忆，
+        /// 同一个手机下次连进来仍然认回同一个槽号，设备按它这次选的类型重建。
+        /// </summary>
+        public bool RemoveDevice(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= _slots.Length)
+            {
+                return false;
+            }
+
+            IVirtualGamepad? device;
+
+            lock (_indexLock)
+            {
+                GamepadSlot slot = _slots[slotIndex];
+                if (slot.OwnerConnectionId != null || slot.Device == null)
+                {
+                    return false;
+                }
+
+                device = slot.Device;
+                slot.Device = null;
+                slot.Type = null;
+            }
+
+            // Disconnect/Dispose 要等驱动回话，放到锁外做，别卡住别的槽位认领。
+            DisposeDevice(device);
+            ServerLog.Info($"槽位 {slotIndex} 的虚拟设备已卸载");
+            RaiseSlotsChanged();
+            return true;
         }
 
         /// <summary>推给手机端的槽位投影（不含 connectionId）。</summary>

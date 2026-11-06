@@ -46,9 +46,9 @@ namespace VGamepadWeb.WinForm
             AutoScaleMode = AutoScaleMode.Dpi;
             ClientSize = new Size(980, 580);
             Controls.Add(console);
-            FormBorderStyle = FormBorderStyle.FixedSingle;
+            FormBorderStyle = FormBorderStyle.Sizable;
             Icon = (Icon)resources.GetObject("$this.Icon");
-            MaximizeBox = false;
+            MinimumSize = new Size(980, 580);
             Name = "Form1";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "VGamepadWeb";

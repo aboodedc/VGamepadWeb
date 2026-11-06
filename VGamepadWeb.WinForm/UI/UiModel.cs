@@ -19,7 +19,10 @@ namespace VGamepadWeb.WinForm.UI
 
         public bool Occupied { get; set; }
 
-        /// <summary>设备实际类型："xbox" / "ds4"；空槽给空串。</summary>
+        /// <summary>
+        /// 槽位上常驻设备的实际类型："xbox" / "ds4"；没有设备就空串。
+        /// 注意这表示「有没有设备」，不是「有没有人连着」—— 空闲槽也可能挂着上一台。
+        /// </summary>
         public string Type { get; set; } = string.Empty;
 
         /// <summary>手机端自报的设备名（机型）；空槽或老客户端为空串。</summary>

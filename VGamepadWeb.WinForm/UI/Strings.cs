@@ -49,7 +49,7 @@ namespace VGamepadWeb.WinForm.UI
 
                 // 槽位
                 ["slot.section"] = ("手柄槽位", "Controller slots", "خانات ذراع التحكم"),
-                ["slot.player"] = ("玩家 {0}", "Player {0}", "اللاعب {0}"),
+                ["slot.player"] = ("手柄 {0}", "Controller {0}", "ذراع التحكم {0}"),
                 ["ip.current"] = ("当前使用", "Current", "المستخدمة الآن"),
                 ["slot.online"] = ("{0} / {1} 已连接", "{0} / {1} connected", "متصل {0} / {1}"),
                 ["slot.onlineSuffix"] = ("已连接", "connected", "متصل"),
@@ -57,7 +57,8 @@ namespace VGamepadWeb.WinForm.UI
                 ["slot.add"] = ("新增槽位", "Add slot", "إضافة خانة"),
                 ["slot.type"] = ("类型", "Type", "النوع"),
                 ["slot.emptyNote"] = ("暂无设备，用手机打开上方地址即可占用", "No device yet — open the address above", "لا توجد أجهزة بعد — افتح العنوان أعلاه من الهاتف"),
-                ["slot.waiting"] = ("等待手机连接", "Waiting for phone", "في انتظار الهاتف"),
+                ["slot.waiting"] = ("等待设备重连", "Waiting for reconnect", "في انتظار إعادة الاتصال"),
+                ["slot.waitingDevice"] = ("等待设备接入", "Waiting for a device", "في انتظار جهاز"),
                 ["slot.connected"] = ("已连接", "Connected", "متصل"),
                 ["slot.idle"] = ("空闲", "Idle", "متاح"),
                 ["slot.disconnect"] = ("断开连接", "Disconnect", "قطع الاتصال"),
@@ -92,6 +93,8 @@ namespace VGamepadWeb.WinForm.UI
                 ["dialog.driverMissing.text"] = ("本应用需要 ViGEmBus 驱动才能正常工作，程序即将关闭。", "VGamepadWeb needs the ViGEmBus driver to work. The app will close now.", "يتطلب VGamepadWeb تعريف ViGEmBus ليعمل. سيتم إغلاق التطبيق الآن."),
                 ["dialog.driverInstallFailed.title"] = ("系统错误", "System error", "خطأ في النظام"),
                 ["dialog.driverInstallFailed.text"] = ("驱动自动安装失败：{0}", "Failed to install the driver automatically: {0}", "فشل التثبيت التلقائي للتعريف: {0}"),
+                ["dialog.alreadyRunning.title"] = ("已经在运行", "Already running", "يعمل بالفعل"),
+                ["dialog.alreadyRunning.text"] = ("VGamepadWeb 已经有一个实例在运行，去通知区域找它的图标。", "VGamepadWeb is already running — look for its icon in the notification area.", "VGamepadWeb يعمل بالفعل — ابحث عن أيقونته في شريط النظام."),
 
                 // 反馈（toast）
                 ["toast.copied"] = ("已复制 {0}", "Copied {0}", "تم نسخ {0}"),
@@ -107,6 +110,7 @@ namespace VGamepadWeb.WinForm.UI
                 ["toast.slotLimit"] = ("已达到槽位上限（{0}）", "Slot limit reached ({0})", "تم بلوغ الحد الأقصى للخانات ({0})"),
                 ["toast.slotOnlyLast"] = ("只能删除最后一个槽位", "Only the last slot can be removed", "يمكن حذف الخانة الأخيرة فقط"),
                 ["toast.slotBusy"] = ("槽位 {0} 正在使用，先断开设备再删除", "Slot {0} is in use — disconnect first", "الخانة {0} مستخدمة — اقطع الاتصال أولًا"),
+                ["toast.deviceRemoved"] = ("已卸载槽位 {0} 的设备", "Removed the device on slot {0}", "تمت إزالة جهاز الخانة {0}"),
                 ["toast.slotKeepOne"] = ("至少保留一个槽位", "Keep at least one slot", "أبقِ خانة واحدة على الأقل"),
                 ["toast.slotInvalid"] = ("无效的槽位", "Invalid slot", "خانة غير صالحة"),
                 ["toast.unknownType"] = ("未知的槽位类型：{0}", "Unknown slot type: {0}", "نوع خانة غير معروف: {0}"),

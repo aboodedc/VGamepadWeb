@@ -116,6 +116,33 @@ const VirtualGamepadInner: React.FC = () => {
   useEffect(() => { localStorage.setItem('gamepad_sens', sensitivity.toString()); }, [sensitivity]);
   useEffect(() => { localStorage.setItem('gamepad_pass', serverPassword); }, [serverPassword]);
 
+  // 锁屏 / 切应用 / 失焦：按住不放的键要在这里补一次「松开」。
+  // 移动端这时只发 touchcancel，服务端会一直以为扳机按着 —— 重连后游戏里还是踩死的油门。
+  const activeButtonsRef = useRef(activeButtons);
+  activeButtonsRef.current = activeButtons;
+
+  useEffect(() => {
+    const releaseAll = () => {
+      const held = activeButtonsRef.current;
+      if (held.size === 0) return;
+      held.forEach(id => sendButton(id, false));
+      setActiveButtons(new Set());
+      // 摇杆也归中：它同样可能停在最后的位置。
+      STICK_IDS.forEach(sid => sendJoystick(sid, 0, 0));
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') releaseAll();
+    };
+
+    window.addEventListener('blur', releaseAll);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('blur', releaseAll);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [sendButton, sendJoystick]);
+
   const switchProfile = useCallback((profileId: string) => {
     setActiveProfile(profileId);
     setLayout(loadLayout(theme, profileId));
@@ -251,7 +278,6 @@ const VirtualGamepadInner: React.FC = () => {
         activeProfile={activeProfile} profiles={profiles} switchProfile={switchProfile}
         createNewProfile={createNewProfile} deleteProfile={deleteProfile}
         theme={theme} setTheme={setTheme}
-        controllerType={controllerType} setControllerType={setControllerType}
         enableVib={enableVib} setEnableVib={setEnableVib}
         sensitivity={sensitivity} setSensitivity={setSensitivity}
       />
@@ -262,6 +288,7 @@ const VirtualGamepadInner: React.FC = () => {
         connecting={connStatus === 'ing'}
         notice={notice}
         serverPassword={serverPassword} setServerPassword={setServerPassword}
+        controllerType={controllerType} setControllerType={setControllerType}
         connect={connect}
         toggleFullscreen={toggleFullscreen}
         isFullscreen={isFullscreen}

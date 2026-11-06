@@ -29,7 +29,7 @@ const ar = {
     profile: 'البروفايل (تخصيص الأزرار)',
     buttonStyle: 'شكل الأزرار (التصميم)',
     xboxDefault: 'Xbox (الافتراضي)',
-    controllerType: 'نوع يد为单位 التحكم',
+    controllerType: 'نوع ذراع التحكم',
     typeXbox360: 'Xbox 360',
     typeDualShock4: 'DualShock 4 (PS4)',
     enableVibration: 'تفعيل الاهتزاز',
@@ -60,7 +60,7 @@ const ar = {
     reasonNoFreeSlot: 'لا توجد مقاعد متاحة',
     reasonSlotInvalid: 'رقم المقعد غير صالح',
     reasonKickedByAdmin: 'تم قطع اتصالك من الخادم',
-    connectFailed: 'فشل الاتصال، تحقق من عنوان الخادم',
+    connectFailed: 'فشل الاتصال، حاول مرة أخرى',
     authFailed: 'كلمة مرور الخادم غير صحيحة',
 
     // EditBar
@@ -155,7 +155,7 @@ const en = {
     reasonNoFreeSlot: 'No free slot available',
     reasonSlotInvalid: 'Invalid slot',
     reasonKickedByAdmin: 'The server disconnected you',
-    connectFailed: 'Connection failed, check the server URL',
+    connectFailed: 'Connection failed, please try again',
     authFailed: 'Wrong server password',
 
     // EditBar
@@ -253,7 +253,7 @@ const zh = {
   reasonNoFreeSlot: '没有空闲槽位了',
   reasonSlotInvalid: '槽位号无效',
   reasonKickedByAdmin: '你已被管理员踢出',
-  connectFailed: '连接失败，请检查服务器地址',
+  connectFailed: '连接失败，请重试',
   authFailed: '服务器密码不正确',
 
   // EditBar

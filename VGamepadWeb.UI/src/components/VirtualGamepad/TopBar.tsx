@@ -34,8 +34,6 @@ interface TopBarProps {
   deleteProfile: (id: string) => void;
   theme: ThemeType;
   setTheme: (theme: ThemeType) => void;
-  controllerType: number;
-  setControllerType: (type: number) => void;
   enableVib: boolean;
   setEnableVib: (enable: boolean) => void;
   sensitivity: number;
@@ -53,7 +51,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   resetLayout, exportLayout, fileRef, importLayout, layout, toggleVisibility,
   showHitboxes, setShowHitboxes,
   activeProfile, profiles, switchProfile, createNewProfile, deleteProfile,
-  theme, setTheme, controllerType, setControllerType, enableVib, setEnableVib, sensitivity, setSensitivity
+  theme, setTheme, enableVib, setEnableVib, sensitivity, setSensitivity
 }) => {
   const { t } = useLanguage();
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -77,7 +75,8 @@ export const TopBar: React.FC<TopBarProps> = ({
         )}
         <div className="gp-spacer" />
 
-        {/* 手柄参数：配置方案 / 按键风格 / 启动振动 / 全屏 —— 全在这一行 */}
+        {/* 手柄参数：配置方案 / 按键风格 / 启动振动 / 灵敏度 —— 全在这一行。
+            手柄类型不在这里：它决定服务端建哪种设备，只能在连接门里选。 */}
         <select
           className="gp-bar-select"
           value={activeProfile}
@@ -96,18 +95,6 @@ export const TopBar: React.FC<TopBarProps> = ({
           <option value="xbox">{t.xboxDefault}</option>
           <option value="ps">PlayStation</option>
           <option value="nintendo">Nintendo Switch</option>
-        </select>
-
-        {/* 手柄类型：决定服务端建哪种虚拟设备（Xbox 360 / DualShock 4）。连上后就不能改了。 */}
-        <select
-          className="gp-bar-select"
-          value={controllerType}
-          onChange={e => setControllerType(parseInt(e.target.value, 10))}
-          disabled={connStatus === 'on' || connStatus === 'ing'}
-          aria-label={t.controllerType}
-        >
-          <option value={0}>{t.typeXbox360}</option>
-          <option value={1}>{t.typeDualShock4}</option>
         </select>
 
         <button

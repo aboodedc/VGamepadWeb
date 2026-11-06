@@ -115,8 +115,31 @@ namespace VGamepadWeb.Core
             catch (Exception ex)
             {
                 ServerLog.Error($"服务启动失败：{ex.Message}", ex);
+
+                // 失败也要把半成品 host 收掉：留着 _app != null，属性会继续返回死容器里的实例，
+                // 界面按「有服务」渲染，下一次启动还会把旧 host 直接覆盖漏掉。
+                await CleanupFailedAppAsync();
                 throw;
             }
+        }
+
+        private async Task CleanupFailedAppAsync()
+        {
+            if (_app == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await _app.DisposeAsync();
+            }
+            catch
+            {
+                // 收尾失败就算了，进程还在，下一次启动会重新建。
+            }
+
+            _app = null;
         }
 
         public void UpdateServerPassword(string newPassword)
@@ -186,6 +209,11 @@ namespace VGamepadWeb.Core
             try
             {
                 ServerLog.Info("正在停止服务…");
+
+                // 先收会话：容器 Dispose 会连 GamepadManager 和 ViGEm 设备一起拆掉，
+                // 还活着的数据通道再收到输入就是打在已释放的设备上。
+                _app.Services.GetService<WebRTCSessionManager>()?.CloseAll();
+
                 await _app.StopAsync();
                 await _app.DisposeAsync();
                 _app = null;
@@ -194,6 +222,7 @@ namespace VGamepadWeb.Core
             catch (Exception ex)
             {
                 ServerLog.Error("停止服务时出错", ex);
+                await CleanupFailedAppAsync();
                 throw;
             }
         }

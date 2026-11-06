@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System.Diagnostics;
+using VGamepadWeb.Core;
 using VGamepadWeb.WinForm.UI;
 
 namespace VGamepadWeb.WinForm
@@ -89,11 +90,20 @@ namespace VGamepadWeb.WinForm
 
                 using (Process process = Process.Start(psi))
                 {
-                    process?.WaitForExit();
+                    // 安装器不能在启动路径上无限期挂着：这段时间窗口还没起来，用户只会觉得程序没反应。
+                    bool exited = process == null || process.WaitForExit(180_000);
 
-                    if (File.Exists(tempExePath)) File.Delete(tempExePath);
+                    if (!exited)
+                    {
+                        ServerLog.Warn("ViGEmBus 安装器 3 分钟没有退出，按安装失败处理（文件仍在运行，不删临时文件）");
+                    }
 
-                    return IsDriverInstalled();
+                    if (exited && File.Exists(tempExePath))
+                    {
+                        File.Delete(tempExePath);
+                    }
+
+                    return exited && IsDriverInstalled();
                 }
             }
             catch (Exception ex)

@@ -73,7 +73,19 @@ namespace VGamepadWeb.Core
             }
 
             ServerLog.Info($"连接 {Context.ConnectionId} 占用槽位 {slotIndex}");
-            await _rtcManager.StartConnectionAsync(Context.ConnectionId, sdpOffer);
+
+            try
+            {
+                await _rtcManager.StartConnectionAsync(Context.ConnectionId, sdpOffer);
+            }
+            catch (Exception ex)
+            {
+                // 协商失败（offer 解析不了、客户端中途取消）：槽位和 pc 都收干净，
+                // 否则界面上会留一台不存在的手机「占用中」，而那台手机只拿到一个裸异常。
+                ServerLog.Error($"WebRTC 协商失败（连接 {Context.ConnectionId}）", ex);
+                _rtcManager.EndConnection(Context.ConnectionId);
+                await Clients.Caller.SendAsync("SlotUnavailable", "negotiation_failed");
+            }
         }
 
         /// <summary>

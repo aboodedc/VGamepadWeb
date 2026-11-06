@@ -78,9 +78,11 @@ button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
 
 /* ═══════ Top Bar ═══════ */
 .gp-bar {
-  height: 40px; min-height: 40px;
+  /* 一行装不下就折行：手机上顶栏本来就挤，宁可占两行，也不能把「菜单/编辑」推到屏幕外。 */
+  height: auto; min-height: 40px;
   display: flex; align-items: center; gap: 8px;
-  padding: 0 12px;
+  flex-wrap: wrap;
+  padding: 4px 12px;
   background: var(--bar-bg);
   border-bottom: 1px solid var(--border);
   z-index: 50;
@@ -973,12 +975,12 @@ button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
 @media (max-width: 480px) {
   .gp-joy { width: 100px; height: 100px; }
   .gp-joy-knob { width: 40px; height: 40px; }
-  .gp-bar { height: 36px; min-height: 36px; gap: 6px; padding: 0 8px; }
+  .gp-bar { min-height: 36px; gap: 6px; padding: 4px 8px; }
   .gp-bar-btn { padding: 3px 8px; font-size: 11px; }
 }
 
 @media (max-height: 450px) {
-  .gp-bar { height: 32px; min-height: 32px; }
+  .gp-bar { min-height: 32px; padding: 2px 8px; }
   .gp-bar-status { display: none; }
   
   .gp-edit-bar {
@@ -1135,6 +1137,24 @@ button, label, select, option, .gp-btn, .gp-ctrl, .gp-bar-btn {
   font-family: inherit;
   cursor: pointer;
 }
+
+/* 手柄类型下拉：整行铺满，字体跟界面走（.gp-input 是等宽的，给数字用）。 */
+.gp-gate-type {
+  display: block;
+  width: 100%;
+  background: #0a0a0f;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+.gp-gate-type:focus { border-color: var(--green); }
 
 .gp-gate-connect {
   width: 100%;

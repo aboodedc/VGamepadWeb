@@ -78,6 +78,7 @@ export const useGamepadConnection = ({
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
   const pingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const connectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const authFailedRef = useRef(false);
 
   // 语言可能在连接期间切换，事件回调里读最新文案。
@@ -100,8 +101,13 @@ export const useGamepadConnection = ({
     if (pingRef.current) { clearInterval(pingRef.current); pingRef.current = null; }
   };
 
+  const stopConnectTimer = () => {
+    if (connectTimerRef.current) { clearTimeout(connectTimerRef.current); connectTimerRef.current = null; }
+  };
+
   const closePeer = () => {
     stopPing();
+    stopConnectTimer();
     const dc = dcRef.current;
     dcRef.current = null;
     dc?.close();
@@ -146,6 +152,7 @@ export const useGamepadConnection = ({
   useEffect(() => {
     return () => {
       if (pingRef.current) clearInterval(pingRef.current);
+      if (connectTimerRef.current) clearTimeout(connectTimerRef.current);
       dcRef.current?.close();
       pcRef.current?.close();
       connRef.current?.stop();
@@ -156,6 +163,7 @@ export const useGamepadConnection = ({
     dc.onopen = () => {
       if (dcRef.current !== dc) return;
       console.log('[WebRTC] Data Channel opened — ready to send gamepad data!');
+      stopConnectTimer();
       setConnStatus('on');
       stopPing();
       pingRef.current = setInterval(() => {
@@ -230,7 +238,9 @@ export const useGamepadConnection = ({
     } catch (err) {
       console.error(err);
       closePeer();
-      setNotice(tRef.current.connectFailed);
+      // 密码错时服务端先发 AuthFailed 再 Abort，挂起的 invoke 会跟着 reject：
+      // 这里要是不判断，就把「密码错误」覆盖成了「连接失败」。
+      if (!authFailedRef.current) setNotice(tRef.current.connectFailed);
       setConnStatus('off');
     }
   };
@@ -302,6 +312,22 @@ export const useGamepadConnection = ({
       await c.start();
       connRef.current = c;
       setConnStatus('ing');
+
+      // 协商可能永远不回话（服务端 RTC 出错、answer 丢了）：给个上限。
+      // 没有这个上限，界面会卡在「连接中…」且按钮是禁用的，用户连重试的入口都没有。
+      stopConnectTimer();
+      connectTimerRef.current = setTimeout(() => {
+        connectTimerRef.current = null;
+        if (dcRef.current?.readyState === 'open') return;
+
+        // 连 SignalR 一起停掉：否则服务端还以为这条连接活着，槽位一直占着。
+        const hub = connRef.current;
+        closePeer();
+        setConnStatus('off');
+        setNotice(tRef.current.connectFailed);
+        void hub?.stop().catch(() => {});
+      }, 10000);
+
       await startPeer(c);
     } catch (err) {
       console.error(err);

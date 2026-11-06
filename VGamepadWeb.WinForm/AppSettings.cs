@@ -1,4 +1,5 @@
 using System.Text.Json;
+using VGamepadWeb.Core;
 using VGamepadWeb.WinForm.UI;
 
 namespace VGamepadWeb.WinForm
@@ -51,9 +52,11 @@ namespace VGamepadWeb.WinForm
 
                 return Normalize(loaded);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // JsonException / IOException / UnauthorizedAccessException：一律按「没有可用设置」处理。
+                // 但要留痕：不然用户只会遇到「它自己把端口和密码忘了」，还查不出原因。
+                ServerLog.Warn($"设置读取失败，本次使用默认值：{ex.Message}");
                 return new AppSettings();
             }
         }
@@ -85,6 +88,12 @@ namespace VGamepadWeb.WinForm
             }
 
             settings.Password ??= string.Empty;
+
+            // 手改坏了的端口不能让程序永远起不来：超出范围就回默认。
+            if (settings.Port < 1 || settings.Port > 65535)
+            {
+                settings.Port = 5000;
+            }
 
             if (string.IsNullOrEmpty(settings.Language) || !Languages.All.Contains(settings.Language))
             {

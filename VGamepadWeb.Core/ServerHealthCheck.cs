@@ -13,20 +13,16 @@ namespace VGamepadWeb.Core
     public static class ServerHealthCheck
     {
         /// <summary>自检结果。Ok 为 true 时 Message 仅作说明，为 false 时是失败原因。</summary>
-        public sealed record Result(bool Ok, string Message, int StatusCode)
-        {
-            /// <summary>
-            /// 服务本身可用，但局域网地址不通（多半是防火墙）。
-            /// 这不是启动失败，只是一个需要提醒用户的警告。
-            /// </summary>
-            public bool LanWarning { get; init; }
-        }
+        public sealed record Result(bool Ok, string Message, int StatusCode);
 
         /// <summary>
-        /// 探测本机服务是否真的可用。
-        /// 依次检查 127.0.0.1 与局域网 IP；本机通、局域网不通时要单独提示（多半是防火墙）。
+        /// 探测本机服务是否真的可用：端口有没有在监听。
+        ///
+        /// 只探 127.0.0.1。以前还挨个探局域网 IP，但同一台机器连自己的局域网地址走的是本机栈，
+        /// 根本不经过 Windows 防火墙的入站规则 —— 防火墙把端口拦了，那个探测照样通过，
+        /// 等于给「假启动」又盖了个「自检通过」的章。测不出来的东西就别测。
         /// </summary>
-        public static Result Check(int port, IReadOnlyList<string> lanAddresses, int timeoutMs = 4000)
+        public static Result Check(int port, int timeoutMs = 4000)
         {
             Result loopback = Probe("127.0.0.1", port, timeoutMs);
 
@@ -35,23 +31,7 @@ namespace VGamepadWeb.Core
                 return new Result(false, "本机端口未响应：" + loopback.Message, 0);
             }
 
-            foreach (string address in lanAddresses)
-            {
-                Result lan = Probe(address, port, timeoutMs);
-                if (!lan.Ok)
-                {
-                    // 本机通但局域网不通：服务活着，问题在网络或防火墙。
-                    return new Result(
-                        true,
-                        "本机可访问，但局域网地址 " + address + " 不可达（" + lan.Message + "）。请检查防火墙是否放行该端口。",
-                        lan.StatusCode)
-                    {
-                        LanWarning = true
-                    };
-                }
-            }
-
-            return new Result(true, "自检通过", loopback.StatusCode);
+            return loopback;
         }
 
         private static Result Probe(string host, int port, int timeoutMs)

@@ -80,6 +80,7 @@ namespace VGamepadWeb.WinForm.UI
         public event Action<int, string> CommitCredentials;
         public event Action<string> LanguageChanged;
         public event Action<int> DisconnectSlot;
+        public event Action<int> RemoveDevice;
 
         public ConsoleView()
         {
@@ -959,6 +960,9 @@ namespace VGamepadWeb.WinForm.UI
             {
                 SlotItem item = i < slots.Count ? slots[i] : null;
                 bool occupied = item != null && item.Occupied;
+
+                // Type 非空 ⇔ 这个槽位上常驻着设备（空槽给空串）：空闲但设备还在的槽，要能删掉它。
+                bool hasDevice = item != null && !string.IsNullOrEmpty(item.Type);
                 int slotNumber = item != null && item.Slot > 0 ? item.Slot : i + 1;
 
                 float cardX = 324f + (i % 2) * (cardWidth + cardGapX);
@@ -971,7 +975,8 @@ namespace VGamepadWeb.WinForm.UI
                     Occupied = occupied,
                     SlotNumber = slotNumber,
                     Index = i,
-                    Brand = item != null && !string.IsNullOrEmpty(item.Type) ? item.Type : "xbox"
+                    HasDevice = hasDevice,
+                    Brand = hasDevice ? item.Type : "xbox"
                 };
 
                 card.NumberRect = R(f, cardX + cardPad, cardY + 12f, 22f, 18f);
@@ -1006,8 +1011,30 @@ namespace VGamepadWeb.WinForm.UI
                 }
                 else
                 {
-                    // 空闲卡没有按钮：手柄线稿 + 一句提示横排，不再居中留一大片空白。
+                    // 空闲卡：手柄线稿 + 一句提示横排，不再居中留一大片空白。
                     card.PrimaryButton = RectangleF.Empty;
+
+                    // 设备还常驻着才给「删除」：删的是这台虚拟手柄，不是槽位本身。
+                    // 提示文字让出这段宽度，按钮贴在右下角（RTL 下由 R() 镜像到左下）。
+                    if (hasDevice)
+                    {
+                        const float deleteWidth = 72f;
+                        card.HintRect = R(
+                            f,
+                            cardX + cardPad + 40f,
+                            cardY + 69f,
+                            cardInner - 40f - deleteWidth - 10f,
+                            32f);
+                        card.DeleteButton = R(
+                            f,
+                            cardX + cardWidth - cardPad - deleteWidth,
+                            cardY + 71f,
+                            deleteWidth,
+                            28f);
+
+                        Hit removeHit = AddHit(f, card.DeleteButton, "slot" + i + ":remove", HitAction.RemoveDevice, true);
+                        removeHit.Slot = slotNumber;
+                    }
                 }
 
                 f.Cards.Add(card);
@@ -1554,7 +1581,7 @@ namespace VGamepadWeb.WinForm.UI
                     StringAlignment.Center);
             }
 
-            // 标题固定「玩家 N」：槽位名称与锁定整套配置已取消。
+            // 标题固定「手柄 N」：槽位名称与锁定整套配置已取消。
             string title = Strings.T(lang, "slot.player", card.SlotNumber);
 
             using (Font titleFont = CreateFittedFont(false, 13f, s, FontStyle.Bold, title, card.TitleRect.Width, 11f))
@@ -1597,12 +1624,36 @@ namespace VGamepadWeb.WinForm.UI
             }
             else
             {
+                // 空闲但设备还常驻：先把类型标出来，管理员才知道要删掉的是哪台。
+                if (card.HasDevice)
+                {
+                    using (Font typeFont = Theme.Sans(12f * s, FontStyle.Bold))
+                    {
+                        DrawText(
+                            g,
+                            Strings.TypeLabel(lang, card.Brand),
+                            typeFont,
+                            Theme.Muted,
+                            card.TypeRect,
+                            StringAlignment.Near,
+                            StringAlignment.Center,
+                            true);
+                    }
+                }
+
                 // 空闲位：手柄线稿在左、提示在右，整行在顶行以下垂直居中。
                 DrawGamepadGlyph(g, card.GlyphRect, Theme.Muted, s);
 
-                using (Font hintFont = Theme.Sans(12.5f * s))
+                // 有删除键时提示只剩 152px 宽，阿语/英语原样排会顶出去，按实际宽度缩字号。
+                string hint = Strings.T(lang, card.HasDevice ? "slot.waiting" : "slot.waitingDevice");
+                using (Font hintFont = CreateFittedFont(false, 12.5f, s, FontStyle.Regular, hint, card.HintRect.Width, 10f))
                 {
-                    DrawText(g, Strings.T(lang, "slot.waiting"), hintFont, Theme.Muted, card.HintRect, StringAlignment.Near, StringAlignment.Center, true);
+                    DrawText(g, hint, hintFont, Theme.Muted, card.HintRect, StringAlignment.Near, StringAlignment.Center, true);
+                }
+
+                if (card.HasDevice)
+                {
+                    DrawButton(g, f, card.DeleteButton, Strings.T(lang, "slot.delete"), 11.5f, ButtonStyle.Danger, "slot" + card.Index + ":remove", true);
                 }
             }
         }
@@ -2174,6 +2225,17 @@ namespace VGamepadWeb.WinForm.UI
 
                         break;
                     }
+
+                case HitAction.RemoveDevice:
+                    {
+                        Action<int> handler = RemoveDevice;
+                        if (handler != null)
+                        {
+                            handler(hit.Slot);
+                        }
+
+                        break;
+                    }
             }
 
             Invalidate();
@@ -2369,7 +2431,8 @@ namespace VGamepadWeb.WinForm.UI
             OpenLanguage,
             FocusPort,
             FocusPass,
-            Disconnect
+            Disconnect,
+            RemoveDevice
         }
 
         private enum ButtonStyle
@@ -2410,6 +2473,10 @@ namespace VGamepadWeb.WinForm.UI
             public RectangleF DeviceRect;
             public RectangleF AddressRect;
             public RectangleF PrimaryButton;
+            public RectangleF DeleteButton;
+
+            /// <summary>这个槽位上是否常驻着虚拟设备（空闲也可能有）。</summary>
+            public bool HasDevice;
         }
 
         private sealed class Frame

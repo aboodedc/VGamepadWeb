@@ -15,6 +15,9 @@ interface ConnectionGateProps {
   notice: string | null;
   serverPassword: string;
   setServerPassword: (pass: string) => void;
+  /** 服务端按它建虚拟手柄：0 = Xbox 360，1 = DualShock 4。 */
+  controllerType: number;
+  setControllerType: (type: number) => void;
   connect: () => void;
   toggleFullscreen: () => void;
   isFullscreen: boolean;
@@ -30,7 +33,8 @@ interface ConnectionGateProps {
  */
 export const ConnectionGate: React.FC<ConnectionGateProps> = ({
   connected, connecting, notice,
-  serverPassword, setServerPassword, connect, toggleFullscreen, isFullscreen
+  serverPassword, setServerPassword, controllerType, setControllerType,
+  connect, toggleFullscreen, isFullscreen
 }) => {
   const { t, language, setLanguage } = useLanguage();
 
@@ -56,6 +60,20 @@ export const ConnectionGate: React.FC<ConnectionGateProps> = ({
           autoCapitalize="off"
           autoCorrect="off"
         />
+
+        {/* 手柄类型：决定服务端建哪种虚拟设备。连上之后覆盖层消失，就没有改的入口了，
+            换类型要断开重连 —— 服务端会在原来的槽位上拆掉旧设备再建新的。 */}
+        <label className="gp-gate-label" htmlFor="gp-gate-type">{t.controllerType}</label>
+        <select
+          id="gp-gate-type"
+          className="gp-gate-type"
+          value={controllerType}
+          onChange={e => setControllerType(parseInt(e.target.value, 10))}
+          disabled={connecting}
+        >
+          <option value={0}>{t.typeXbox360}</option>
+          <option value={1}>{t.typeDualShock4}</option>
+        </select>
 
         <button className="gp-mbtn green gp-gate-connect" onClick={connect} disabled={connecting}>
           {connecting ? t.connecting : t.connect}

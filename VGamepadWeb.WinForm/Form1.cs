@@ -40,6 +40,7 @@ namespace VGamepadWeb.WinForm
         // 托盘：点 × 只是隐藏到这里，只有托盘菜单「退出」才真的关。
         private readonly TrayController _tray;
         private bool _allowExit;
+        private bool _exiting;
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public ServerPhase CurrentState
@@ -68,6 +69,7 @@ namespace VGamepadWeb.WinForm
             console.CommitCredentials += OnCommitCredentials;
             console.LanguageChanged += OnLanguageChanged;
             console.DisconnectSlot += OnDisconnectSlot;
+            console.RemoveDevice += OnRemoveDevice;
 
             _tray = new TrayController(this, ShowFromTray, ExitApplication, _settings.Language);
 
@@ -90,7 +92,8 @@ namespace VGamepadWeb.WinForm
         private void Form1_Load(object sender, EventArgs e)
         {
             _refreshPump = new System.Windows.Forms.Timer { Interval = 500 };
-            _refreshPump.Tick += (_, _) => RefreshUi();
+            // 收进托盘/最小化时没人看得见，不用每 500ms 建一遍模型（还顺带枚举网卡）。
+            _refreshPump.Tick += (_, _) => { if (Visible) RefreshUi(); };
             _refreshPump.Start();
 
             FormClosed += (_, _) =>
@@ -130,10 +133,13 @@ namespace VGamepadWeb.WinForm
                 return;
             }
 
-            UiModel model = BuildModel();
+            // 网卡只枚举一次：BuildModel 和下面的地址都用这一份。
+            // 之前每拍枚举两遍，2Hz 跑几个小时，在电池机器上很显眼。
+            List<LocalAddress> allIps = NetworkHelper.GetAllLocalIPv4Addresses();
+            UiModel model = BuildModel(allIps);
 
             // 二维码按地址缓存：只有地址变了才重建，避免 2Hz 反复造 GDI 位图。
-            string address = BuildAddress();
+            string address = allIps.Count > 0 ? $"{allIps[0].Ip}:{_settings.Port}" : string.Empty;
             Image previousQr = _qrImage;
             if (!string.Equals(address, _qrAddress, StringComparison.Ordinal))
             {
@@ -150,10 +156,9 @@ namespace VGamepadWeb.WinForm
             }
         }
 
-        private UiModel BuildModel()
+        private UiModel BuildModel(List<LocalAddress> allIps)
         {
             bool running = CurrentState == ServerPhase.Running;
-            List<LocalAddress> allIps = NetworkHelper.GetAllLocalIPv4Addresses();
 
             // 首选地址 == GetAllLocalIPv4Addresses()[0]（NetworkHelper 内部即如此实现）；
             // 无网卡时给空串，不能把 127.0.0.1 当作可达地址。
@@ -191,7 +196,8 @@ namespace VGamepadWeb.WinForm
             }
 
             // 固定 4 条，顺序即槽位号 1..4；空槽 Type 空串、ControllerId -1。
-            // 名称 / 锁定整套槽位配置已取消：槽位由服务端自动分配，设备类型由客户端自己选。
+            // Type 反映的是「这个槽位上有没有设备」而不是「有没有人连着」：
+            // 设备常驻，空闲槽也可能挂着上一台，界面靠它决定要不要显示「删除」。
             for (int slot = 1; slot <= SlotCount; slot++)
             {
                 int index = slot - 1;
@@ -202,7 +208,7 @@ namespace VGamepadWeb.WinForm
                 {
                     Slot = slot,
                     Occupied = occupied,
-                    Type = occupied ? MapCoreType(liveSlot.ControllerType) : string.Empty,
+                    Type = hasLive && !string.IsNullOrEmpty(liveSlot.ControllerType) ? MapCoreType(liveSlot.ControllerType) : string.Empty,
                     ControllerId = occupied ? liveSlot.Slot : -1,
                     DeviceName = occupied ? liveSlot.DeviceName ?? string.Empty : string.Empty,
                     RemoteIp = occupied ? liveSlot.RemoteIp ?? string.Empty : string.Empty
@@ -314,16 +320,7 @@ namespace VGamepadWeb.WinForm
                     return;
                 }
 
-                if (health.LanWarning)
-                {
-                    // 服务能用，但局域网不通：照样允许运行，只提示。
-                    ServerLog.Warn(health.Message);
-                    ShowToast("toast.lanUnreachable", ToastWarn, health.Message);
-                }
-                else
-                {
-                    ServerLog.Info("启动自检通过：端口在监听，首页可访问");
-                }
+                ServerLog.Info("启动自检通过：端口在监听，首页可访问");
 
                 _startedAt = DateTimeOffset.Now;
                 CurrentState = ServerPhase.Running;
@@ -339,15 +336,12 @@ namespace VGamepadWeb.WinForm
 
         /// <summary>
         /// 启动后自检：端口是否真的在监听、首页是否真的能打开。
-        /// 局域网地址单独探一遍 —— 本机通、局域网不通，通常是防火墙而不是服务坏了。
+        /// 只探本机：局域网地址从本机连走的是本机栈，测不出防火墙，别给自己盖章。
         /// </summary>
         private async Task<ServerHealthCheck.Result> RunHealthCheckAsync()
         {
-            List<string> lanAddresses = NetworkHelper.GetAllLocalIPv4Addresses()
-                .Select(item => item.Ip)
-                .ToList();
-
-            ServerHealthCheck.Result health = ServerHealthCheck.Check(_settings.Port, lanAddresses);
+            // Check 内部是同步的 Wait(4s)：扔到线程池，别让窗口卡在「启动中」连一帧都画不出来。
+            ServerHealthCheck.Result health = await Task.Run(() => ServerHealthCheck.Check(_settings.Port));
 
             if (!health.Ok)
             {
@@ -526,17 +520,49 @@ namespace VGamepadWeb.WinForm
                 return;
             }
 
-            WebRTCSessionManager rtcManager = _server.WebRTCSessionManager;
-            if (rtcManager != null)
+            // 走 Kick：先给手机发「你被管理员踢出」的稳定码，再关会话。
+            // 直接 EndConnection 的话，手机只看到数据通道关闭，分不清是被踢还是掉线。
+            if (_server.Kick(target.ConnectionId, KickReason))
             {
-                // EndConnection 关 PC、断手柄并触发 OnPlayerDisconnected，刷新由事件带回。
-                rtcManager.EndConnection(target.ConnectionId);
+                ShowToast("toast.kickOk", ToastSuccess, slot);
+                return;
+            }
+
+            // RTC 管理器还没起来（服务刚停）：退回到只释放槽位。
+            gamepadManager.DisconnectGamepad(target.ConnectionId);
+            RefreshUi();
+        }
+
+        /// <summary>
+        /// 卸载槽位上的常驻设备。只在空闲时允许：手机还连着就先断开连接再删 ——
+        /// 删设备等于把它从系统里拔掉，正在玩的手柄会当场消失。
+        /// </summary>
+        private void OnRemoveDevice(int slot)
+        {
+            if (slot < 1 || slot > SlotCount)
+            {
+                ShowToast("toast.slotInvalid", ToastWarn);
+                return;
+            }
+
+            GamepadManager gamepadManager = _server.GamepadManager;
+            if (gamepadManager == null)
+            {
+                ShowToast("toast.notRunning", ToastWarn);
+                return;
+            }
+
+            if (gamepadManager.RemoveDevice(slot - 1))
+            {
+                ShowToast("toast.deviceRemoved", ToastSuccess, slot);
             }
             else
             {
-                gamepadManager.DisconnectGamepad(target.ConnectionId);
-                RefreshUi();
+                // 界面画完之后有人抢了这个槽：设备没删，提示先断开。
+                ShowToast("toast.slotBusy", ToastWarn, slot);
             }
+
+            RefreshUi();
         }
 
         private GamepadSnapshot FindSnapshot(int index)
@@ -566,6 +592,9 @@ namespace VGamepadWeb.WinForm
             Show();
             WindowState = FormWindowState.Normal;
             Activate();
+
+            // 托盘期间刷新泵是停着的，回来先补一拍，别让用户看到过期的槽位。
+            RefreshUi();
         }
 
         private void ExitApplication()
@@ -588,16 +617,55 @@ namespace VGamepadWeb.WinForm
                 return;
             }
 
-            // 真退出：先停服再关窗，避免端口占用和虚拟手柄靠进程消亡回收。
-            // 用 Task.Run 把停顿移出 UI 线程，否则 await 会把续体排回被阻塞的 UI 线程（死锁）。
+            // 已经走过一次关停流程：放行。
+            if (_exiting)
+            {
+                return;
+            }
+
+            // 真退出：先停服再关窗，而且不能在 UI 线程上干等 ——
+            // StopAsync 的默认排空上限是 30 秒，卡在这里 Windows 会先给个「未响应」。
+            if (e.CloseReason == CloseReason.UserClosing || e.CloseReason == CloseReason.None)
+            {
+                e.Cancel = true;
+                _ = ExitAfterShutdownAsync();
+                return;
+            }
+
+            // 关机 / 任务管理器结束：不能取消，最多等两秒就走。
             try
             {
-                Task.Run(() => _server.StopServerAsync()).GetAwaiter().GetResult();
+                Task.Run(() => _server.StopServerAsync()).Wait(2000);
             }
             catch (Exception)
             {
-                // 退出路径上不再冒泡：进程马上结束。
+                // 关停路径上不再冒泡。
             }
+        }
+
+        private async Task ExitAfterShutdownAsync()
+        {
+            _exiting = true;
+
+            try
+            {
+                Task stop = _server.StopServerAsync();
+                // 等不到就算了：进程退出本身也会回收端口和设备。
+                Task finished = await Task.WhenAny(stop, Task.Delay(5000));
+
+                // 已经结束了就把它 await 掉：不然这里快速失败的话，异常没人接，日志里什么都没有。
+                if (finished == stop)
+                {
+                    await stop;
+                }
+            }
+            catch (Exception ex)
+            {
+                ServerLog.Warn($"退出时停止服务失败：{ex.Message}");
+            }
+
+            _allowExit = true;
+            Close();
         }
 
         // ==========================================
