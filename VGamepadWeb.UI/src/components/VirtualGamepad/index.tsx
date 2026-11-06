@@ -6,6 +6,7 @@ import { GpButton } from './GpButton';
 import { GpJoystick } from './GpJoystick';
 import { TopBar } from './TopBar';
 import { SettingsModal } from './SettingsModal';
+import { SlotPicker } from './SlotPicker';
 import { EditBar } from './EditBar';
 import { useGamepadConnection } from './hooks/useGamepadConnection';
 import { LanguageProvider, useLanguage } from './LanguageContext';
@@ -18,7 +19,7 @@ const VirtualGamepadInner: React.FC = () => {
       const p = localStorage.getItem('gamepad_profiles');
       if (p) return JSON.parse(p);
     } catch {}
-    return [{ id: 'default', name: 'Default' }];
+    return [{ id: 'default', name: t.defaultProfile }];
   });
 
   const [theme, setTheme] = useState<ThemeType>(() => (localStorage.getItem('gamepad_theme') as ThemeType) || 'xbox');
@@ -34,7 +35,6 @@ const VirtualGamepadInner: React.FC = () => {
   const [useSameServer, setUseSameServer] = useState<boolean>(() => localStorage.getItem('gamepad_use_same_server') === 'true' || localStorage.getItem('gamepad_use_same_server') === null);
   const [serverUrl, setServerUrl] = useState(() => localStorage.getItem(URL_KEY) || `http://${window.location.hostname}:5000`);
   const [serverPassword, setServerPassword] = useState(() => localStorage.getItem('gamepad_pass') || '');
-  const [controllerType, setControllerType] = useState<number>(() => parseInt(localStorage.getItem('gamepad_ctype') || '0', 10));
   const [enableVib, setEnableVib] = useState<boolean>(() => localStorage.getItem('gamepad_vib') !== 'false');
   const [sensitivity, setSensitivity] = useState<number>(() => parseInt(localStorage.getItem('gamepad_sens') || '100', 10));
   const [activeButtons, setActiveButtons] = useState<Set<string>>(new Set());
@@ -48,8 +48,11 @@ const VirtualGamepadInner: React.FC = () => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const actualServerUrl = useSameServer ? window.location.origin : serverUrl;
-  const { connStatus, latency, controllerId, connect, disconnect, sendButton, sendJoystick } = useGamepadConnection({
-    serverUrl: actualServerUrl, serverPassword, controllerType, enableVib, sensitivity
+  const {
+    connStatus, latency, controllerId, slots, slotSelecting, notice,
+    connect, selectSlot, disconnect, dismissNotice, sendButton, sendJoystick
+  } = useGamepadConnection({
+    serverUrl: actualServerUrl, serverPassword, enableVib, sensitivity, t
   });
 
   // Clear selection when exiting edit mode
@@ -94,7 +97,6 @@ const VirtualGamepadInner: React.FC = () => {
   useEffect(() => { localStorage.setItem('gamepad_profiles', JSON.stringify(profiles)); }, [profiles]);
   useEffect(() => { localStorage.setItem(URL_KEY, serverUrl); }, [serverUrl]);
   useEffect(() => { localStorage.setItem('gamepad_use_same_server', useSameServer.toString()); }, [useSameServer]);
-  useEffect(() => { localStorage.setItem('gamepad_ctype', controllerType.toString()); }, [controllerType]);
   useEffect(() => { localStorage.setItem('gamepad_vib', enableVib.toString()); }, [enableVib]);
   useEffect(() => { localStorage.setItem('gamepad_sens', sensitivity.toString()); }, [sensitivity]);
   useEffect(() => { localStorage.setItem('gamepad_pass', serverPassword); }, [serverPassword]);
@@ -235,12 +237,24 @@ const VirtualGamepadInner: React.FC = () => {
       <SettingsModal 
         settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen} activeProfile={activeProfile}
         profiles={profiles} switchProfile={switchProfile} createNewProfile={createNewProfile} deleteProfile={deleteProfile}
-        theme={theme} setTheme={setTheme} controllerType={controllerType} setControllerType={setControllerType}
+        theme={theme} setTheme={setTheme}
         enableVib={enableVib} setEnableVib={setEnableVib} sensitivity={sensitivity} setSensitivity={setSensitivity}
         useSameServer={useSameServer} setUseSameServer={setUseSameServer}
         serverUrl={serverUrl} setServerUrl={setServerUrl} serverPassword={serverPassword} setServerPassword={setServerPassword} 
         connStatus={connStatus} connect={connect} disconnect={disconnect}
       />
+
+      <SlotPicker
+        open={slotSelecting}
+        slots={slots}
+        mySlot={controllerId}
+        onSelect={selectSlot}
+        onCancel={disconnect}
+      />
+
+      {notice && (
+        <div className="gp-notice" onClick={dismissNotice}>{notice}</div>
+      )}
 
       {/* ─── Canvas ─── */}
       <div

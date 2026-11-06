@@ -30,9 +30,10 @@ interface TopBarProps {
   setShowHitboxes: (show: boolean) => void;
 }
 
-const LANGUAGE_OPTIONS: { value: Language; label: string; flag: string }[] = [
-  { value: 'ar', label: 'العربية', flag: '🇸🇦' },
-  { value: 'en', label: 'English', flag: '🇬🇧' },
+const LANGUAGE_OPTIONS: { value: Language; flag: string }[] = [
+  { value: 'ar', flag: '🇸🇦' },
+  { value: 'en', flag: '🇬🇧' },
+  { value: 'zh', flag: '🇨🇳' },
 ];
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -46,6 +47,9 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [aboutOpen, setAboutOpen] = useState(false);
 
   const currentLang = LANGUAGE_OPTIONS.find(o => o.value === language);
+
+  const languageLabel = (lang: Language) =>
+    lang === 'ar' ? t.arabic : lang === 'zh' ? t.chinese : t.english;
 
   return (
     <>
@@ -118,7 +122,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             onClick={() => { setLangMenuOpen(!langMenuOpen); setMenuOpen(false); setVisibilityMenuOpen(false); }}
             title={t.language}
           >
-            {currentLang?.flag} {currentLang?.label}
+            {currentLang?.flag} {currentLang && languageLabel(currentLang.value)}
           </button>
           {langMenuOpen && (
             <div className="gp-dropdown gp-lang-dropdown">
@@ -130,7 +134,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
                   <span>{opt.flag}</span>
-                  <span>{opt.label}</span>
+                  <span>{languageLabel(opt.value)}</span>
                   {language === opt.value && <span style={{ marginInlineStart: 'auto' }}>✓</span>}
                 </button>
               ))}

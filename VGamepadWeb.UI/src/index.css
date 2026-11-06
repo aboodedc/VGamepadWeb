@@ -32,7 +32,7 @@ html, body {
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, 'Segoe UI', Roboto, 'Microsoft YaHei UI', sans-serif;
   font-size: 14px;
   user-select: none;
   -webkit-user-select: none;
@@ -245,6 +245,7 @@ html, body {
   font-size: 14px; font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
+  white-space: nowrap;
 }
 .gp-mbtn:active { transform: scale(0.96); }
 .gp-mbtn.green { background: var(--green); color: #000; border-color: var(--green); }
@@ -814,6 +815,7 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .gp-edit-action.reset {
@@ -928,4 +930,55 @@ html, body {
     padding: 4px 8px;
     font-size: 10px;
   }
+}
+
+/* ═══════ Slot Picker ═══════ */
+.gp-slot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gp-slot {
+  padding: 16px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gp-slot:not(:disabled):hover { border-color: var(--green); }
+.gp-slot:not(:disabled):active { transform: scale(0.96); }
+.gp-slot.you { border-color: var(--blue); color: var(--blue); }
+.gp-slot:disabled { opacity: 0.4; cursor: default; }
+
+.gp-slot-hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* ═══════ Notice toast ═══════ */
+.gp-notice {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: 90vw;
+  padding: 12px 18px;
+  border: 1px solid var(--red);
+  border-radius: 10px;
+  background: rgba(17, 17, 24, 0.96);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 300;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
 }

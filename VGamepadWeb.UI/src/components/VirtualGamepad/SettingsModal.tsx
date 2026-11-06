@@ -12,8 +12,6 @@ interface SettingsModalProps {
   deleteProfile: (id: string) => void;
   theme: ThemeType;
   setTheme: (theme: ThemeType) => void;
-  controllerType: number;
-  setControllerType: (type: number) => void;
   enableVib: boolean;
   setEnableVib: (enable: boolean) => void;
   sensitivity: number;
@@ -31,7 +29,7 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   settingsOpen, setSettingsOpen, activeProfile, profiles, switchProfile, createNewProfile, deleteProfile,
-  theme, setTheme, controllerType, setControllerType, enableVib, setEnableVib, sensitivity, setSensitivity,
+  theme, setTheme, enableVib, setEnableVib, sensitivity, setSensitivity,
   useSameServer, setUseSameServer, serverUrl, setServerUrl, serverPassword, setServerPassword, connStatus, connect, disconnect
 }) => {
   const { t } = useLanguage();
@@ -67,18 +65,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <option value="xbox">{t.xboxDefault}</option>
           <option value="ps">PlayStation</option>
           <option value="nintendo">Nintendo Switch</option>
-        </select>
-
-        <label>{t.controllerTypeLabel}</label>
-        <select 
-          className="gp-input" 
-          value={controllerType}
-          onChange={e => setControllerType(parseInt(e.target.value, 10))}
-          style={{ marginBottom: '16px' }}
-          disabled={connStatus === 'on' || connStatus === 'ing'}
-        >
-          <option value={0}>Xbox 360</option>
-          <option value={1}>DualShock 4 (PS4)</option>
         </select>
 
         <label style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', gap: '8px', cursor: 'pointer' }}>
