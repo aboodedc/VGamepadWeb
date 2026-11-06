@@ -46,17 +46,10 @@ const ar = {
     invalidFile: 'ملف غير صالح',
     readFileFailed: 'فشل قراءة الملف',
 
-    // Slot picker
-    slotTitle: 'اختر مقعد اليد',
-    slotHint: 'اضغط على مقعد متاح لبدء الاتصال',
-    slotNoData: 'جارٍ قراءة المقاعد…',
-    slotFree: 'متاح',
-    slotOccupied: 'مشغول',
-    slotLocked: 'مقفل',
-    slotYou: 'أنت',
-    slotLast: 'السابق',
-    slotReconnect: 'العودة إلى مقعدك السابق ({num})',
-    slotLabel: '{num} · {state}',
+    // Connection gate (未连接时的全屏覆盖层)
+    gateTitle: 'الاتصال بالجهاز',
+    gateSubtitle: 'وصّل الهاتف بالجهاز قبل استخدام عصا التحكم',
+    useSameServerHint: 'استخدام عنوان الموقع نفسه',
 
     // Stable reason codes from the server
     reasonSlotLocked: 'هذا المقعد مقفل، اختر مقعداً آخر',
@@ -145,17 +138,10 @@ const en = {
     invalidFile: 'Invalid file',
     readFileFailed: 'Failed to read file',
 
-    // Slot picker
-    slotTitle: 'Select Slot',
-    slotHint: 'Tap a free slot to start connecting',
-    slotNoData: 'Reading slots…',
-    slotFree: 'Free',
-    slotOccupied: 'In use',
-    slotLocked: 'Locked',
-    slotYou: 'You',
-    slotLast: 'Last',
-    slotReconnect: 'Back to your last slot ({num})',
-    slotLabel: 'Slot {num} · {state}',
+    // Connection gate (未连接时的全屏覆盖层)
+    gateTitle: 'Connect to device',
+    gateSubtitle: 'Connect your phone to the PC before using the controller',
+    useSameServerHint: 'Use the address of this page',
 
     // Stable reason codes from the server
     reasonSlotLocked: 'This slot is locked, pick another one',
@@ -247,17 +233,10 @@ const zh = {
   invalidFile: '文件无效',
   readFileFailed: '读取文件失败',
 
-  // Slot picker
-  slotTitle: '选择手柄槽位',
-  slotHint: '点一个空闲的槽位开始连接',
-  slotNoData: '正在读取槽位信息…',
-  slotFree: '空闲',
-  slotOccupied: '占用中',
-  slotLocked: '锁定',
-  slotYou: '你',
-  slotLast: '上次',
-  slotReconnect: '回到上次槽位（{num}号）',
-  slotLabel: '{num}号 · {state}',
+  // Connection gate (未连接时的全屏覆盖层)
+  gateTitle: '连接设备',
+  gateSubtitle: '连接手机与电脑后才能使用手柄',
+  useSameServerHint: '使用当前网页的地址',
 
   // Stable reason codes from the server
   reasonSlotLocked: '该槽位已被锁定，请选其他槽位',

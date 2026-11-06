@@ -6,7 +6,7 @@ import { GpButton } from './GpButton';
 import { GpJoystick } from './GpJoystick';
 import { TopBar } from './TopBar';
 import { SettingsModal } from './SettingsModal';
-import { SlotPicker } from './SlotPicker';
+import { ConnectionGate } from './ConnectionGate';
 import { EditBar } from './EditBar';
 import { useGamepadConnection } from './hooks/useGamepadConnection';
 import { LanguageProvider, useLanguage } from './LanguageContext';
@@ -49,8 +49,8 @@ const VirtualGamepadInner: React.FC = () => {
 
   const actualServerUrl = useSameServer ? window.location.origin : serverUrl;
   const {
-    connStatus, latency, controllerId, slots, slotSelecting, recommended, notice,
-    connect, selectSlot, disconnect, dismissNotice, sendButton, sendJoystick
+    connStatus, latency, controllerId, notice,
+    connect, disconnect, dismissNotice, sendButton, sendJoystick
   } = useGamepadConnection({
     serverUrl: actualServerUrl, serverPassword, enableVib, sensitivity, t
   });
@@ -225,35 +225,38 @@ const VirtualGamepadInner: React.FC = () => {
 
   return (
     <div className="gp-root">
-      <TopBar 
+      <TopBar
         connStatus={connStatus} latency={latency} controllerId={controllerId} isBarHidden={isBarHidden} setIsBarHidden={setIsBarHidden}
-        isFullscreen={isFullscreen} toggleFullscreen={toggleFullscreen} editMode={editMode} setEditMode={setEditMode}
+        isFullscreen={isFullscreen}
+        editMode={editMode} setEditMode={setEditMode}
         menuOpen={menuOpen} setMenuOpen={setMenuOpen} visibilityMenuOpen={visibilityMenuOpen}
         setVisibilityMenuOpen={setVisibilityMenuOpen} setSettingsOpen={setSettingsOpen} resetLayout={resetLayout}
         exportLayout={exportLayout} fileRef={fileRef} importLayout={importLayout} layout={layout} toggleVisibility={toggleVisibility}
         showHitboxes={showHitboxes} setShowHitboxes={setShowHitboxes}
       />
 
-      <SettingsModal 
+      <SettingsModal
         settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen} activeProfile={activeProfile}
         profiles={profiles} switchProfile={switchProfile} createNewProfile={createNewProfile} deleteProfile={deleteProfile}
         theme={theme} setTheme={setTheme}
         enableVib={enableVib} setEnableVib={setEnableVib} sensitivity={sensitivity} setSensitivity={setSensitivity}
+        connStatus={connStatus} disconnect={disconnect}
+      />
+
+      {/* 未连接时盖住整页：地址 / 密码 / 连接 / 全屏 / 语言都在这里，连上才能用手柄。 */}
+      <ConnectionGate
+        connected={connStatus === 'on'}
+        connecting={connStatus === 'ing'}
+        notice={notice}
+        serverUrl={serverUrl} setServerUrl={setServerUrl}
         useSameServer={useSameServer} setUseSameServer={setUseSameServer}
-        serverUrl={serverUrl} setServerUrl={setServerUrl} serverPassword={serverPassword} setServerPassword={setServerPassword} 
-        connStatus={connStatus} connect={connect} disconnect={disconnect}
+        serverPassword={serverPassword} setServerPassword={setServerPassword}
+        connect={connect}
+        toggleFullscreen={toggleFullscreen}
+        isFullscreen={isFullscreen}
       />
 
-      <SlotPicker
-        open={slotSelecting}
-        slots={slots}
-        mySlot={controllerId}
-        recommended={recommended}
-        onSelect={selectSlot}
-        onCancel={disconnect}
-      />
-
-      {notice && (
+      {notice && connStatus === 'on' && (
         <div className="gp-notice" onClick={dismissNotice}>{notice}</div>
       )}
 

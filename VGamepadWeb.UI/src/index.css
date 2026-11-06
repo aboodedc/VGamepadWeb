@@ -979,6 +979,107 @@ html, body {
   text-align: center;
 }
 
+/* ═══════ Connection Gate (未连接时的全屏覆盖层) ═══════ */
+.gp-gate {
+  position: fixed; inset: 0;
+  z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  background: radial-gradient(circle at 50% 30%, #14142a 0%, #08080f 70%);
+  overflow-y: auto;
+}
+
+.gp-gate-panel {
+  width: 100%;
+  max-width: 420px;
+  background: #111118;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 26px 22px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+}
+
+.gp-gate-title {
+  font-size: 20px; font-weight: 800;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.gp-gate-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.gp-gate-notice {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  background: rgba(239,68,68,0.12);
+  color: #fecaca;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.gp-gate-label {
+  display: block;
+  font-size: 12px; font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.gp-gate-check {
+  display: flex; align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.gp-gate-panel .gp-input { margin-bottom: 16px; }
+
+.gp-gate-connect {
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+
+.gp-gate-row {
+  display: flex; flex-wrap: wrap;
+  align-items: center; justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.gp-gate-small {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.gp-gate-small:active { transform: scale(0.96); }
+.gp-gate-small.active {
+  background: rgba(59,130,246,0.14);
+  color: var(--blue);
+  border-color: rgba(59,130,246,0.4);
+}
+
+.gp-gate-langs {
+  display: flex; flex-wrap: wrap;
+  gap: 6px;
+}
+
 /* ═══════ Notice toast ═══════ */
 .gp-notice {
   position: fixed;

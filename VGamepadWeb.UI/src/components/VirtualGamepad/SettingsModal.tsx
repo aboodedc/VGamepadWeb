@@ -16,21 +16,18 @@ interface SettingsModalProps {
   setEnableVib: (enable: boolean) => void;
   sensitivity: number;
   setSensitivity: (sens: number) => void;
-  useSameServer?: boolean;
-  setUseSameServer?: (val: boolean) => void;
-  serverUrl: string;
-  setServerUrl: (url: string) => void;
-  serverPassword?: string;
-  setServerPassword?: (pass: string) => void;
   connStatus: 'off' | 'ing' | 'on';
-  connect: () => void;
   disconnect: () => void;
 }
 
+/**
+ * 连上之后的设置面板：只管外观与手柄参数。
+ * 地址、密码、连接都搬去了连接覆盖层（ConnectionGate），这里不再重复；
+ * 只留一个「断开连接」作为主动退出门的出口。
+ */
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   settingsOpen, setSettingsOpen, activeProfile, profiles, switchProfile, createNewProfile, deleteProfile,
-  theme, setTheme, enableVib, setEnableVib, sensitivity, setSensitivity,
-  useSameServer, setUseSameServer, serverUrl, setServerUrl, serverPassword, setServerPassword, connStatus, connect, disconnect
+  theme, setTheme, enableVib, setEnableVib, sensitivity, setSensitivity, connStatus, disconnect
 }) => {
   const { t } = useLanguage();
 
@@ -40,11 +37,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     <div className="gp-overlay" onClick={() => setSettingsOpen(false)}>
       <div className="gp-modal" onClick={e => e.stopPropagation()}>
         <h3>{t.settings}</h3>
-        
+
         <label>{t.profile}</label>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-          <select 
-            className="gp-input" 
+          <select
+            className="gp-input"
             value={activeProfile}
             onChange={e => switchProfile(e.target.value)}
             style={{ flex: 1, marginBottom: 0 }}
@@ -56,8 +53,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <label>{t.buttonStyle}</label>
-        <select 
-          className="gp-input" 
+        <select
+          className="gp-input"
           value={theme}
           onChange={e => setTheme(e.target.value as ThemeType)}
           style={{ marginBottom: '16px' }}
@@ -68,8 +65,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </select>
 
         <label style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', gap: '8px', cursor: 'pointer' }}>
-          <input 
-            type="checkbox" 
+          <input
+            type="checkbox"
             checked={enableVib}
             onChange={e => setEnableVib(e.target.checked)}
             style={{ width: '20px', height: '20px' }}
@@ -78,58 +75,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </label>
 
         <label>{t.sensitivity} ({sensitivity}%)</label>
-        <input 
-          type="range" 
-          className="gp-input" 
-          min="10" max="200" 
+        <input
+          type="range"
+          className="gp-input"
+          min="10" max="200"
           value={sensitivity}
           onChange={e => setSensitivity(parseInt(e.target.value, 10))}
           style={{ marginBottom: '16px' }}
         />
 
-        <label style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', gap: '8px', cursor: 'pointer' }}>
-          <input 
-            type="checkbox" 
-            checked={useSameServer}
-            onChange={e => setUseSameServer && setUseSameServer(e.target.checked)}
-            style={{ width: '20px', height: '20px' }}
-          />
-          {t.useSameServer}
-        </label>
-
-        {!useSameServer && (
-          <>
-            <label>{t.customServer}</label>
-            <input
-              className="gp-input"
-              value={serverUrl}
-              onChange={e => setServerUrl(e.target.value)}
-              placeholder="http://192.168.1.x:5000"
-              style={{ marginBottom: '16px' }}
-            />
-          </>
-        )}
-
-        {setServerPassword !== undefined && (
-          <>
-            <label>{t.password}</label>
-            <input
-              type="password"
-              className="gp-input"
-              value={serverPassword}
-              onChange={e => setServerPassword(e.target.value)}
-              placeholder={t.passwordPlaceholder}
-              style={{ marginBottom: '16px' }}
-            />
-          </>
-        )}
         <div className="gp-modal-btns">
-          {connStatus === 'on' ? (
+          {connStatus === 'on' && (
             <button className="gp-mbtn red" onClick={disconnect}>{t.disconnect}</button>
-          ) : (
-            <button className="gp-mbtn green" onClick={connect} disabled={connStatus === 'ing'}>
-              {connStatus === 'ing' ? '...' : t.connect}
-            </button>
           )}
           <button className="gp-mbtn" onClick={() => setSettingsOpen(false)}>{t.close}</button>
         </div>

@@ -42,8 +42,6 @@ export const useGamepadConnection = ({
   const [latency, setLatency] = useState<number | null>(null);
   const [controllerId, setControllerId] = useState<number | null>(null);
   const [slots, setSlots] = useState<SlotInfo[] | null>(null);
-  const [slotSelecting, setSlotSelecting] = useState(false);
-  const [recommended, setRecommended] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const connRef = useRef<signalR.HubConnection | null>(null);
@@ -93,8 +91,6 @@ export const useGamepadConnection = ({
       try { await c.stop(); } catch (err) { console.error(err); }
     }
     setSlots(null);
-    setSlotSelecting(false);
-    setRecommended(null);
   };
 
   const updateLiveSetting = (key: string, val: string) => {
@@ -165,103 +161,9 @@ export const useGamepadConnection = ({
     };
   };
 
-  // 服务端记得「这个设备码上次坐的是哪个槽」，拿回来在选槽面板里标出来，方便一键接回。
-  const refreshRecommended = async (c: signalR.HubConnection) => {
-    try {
-      const slot = await c.invoke<number | null>('RecommendSlot', getClientId());
-      if (connRef.current === c) setRecommended(typeof slot === 'number' ? slot : null);
-    } catch {
-      // 老服务端没有这个方法：退化成不推荐。
-      setRecommended(null);
-    }
-  };
-
-  // 第一步：只建 SignalR 连接，拿到服务端推来的槽位列表后等用户选槽。
-  const connect = async () => {
-    await resetSession();
-    setConnStatus('ing');
-    setNotice(null);
-    authFailedRef.current = false;
-
-    let url = serverUrl.trim().replace(/\/$/, '');
-    if (!url.endsWith(HUB_PATH)) url += HUB_PATH;
-
-    const c = new signalR.HubConnectionBuilder()
-      .withUrl(url, { skipNegotiation: true, transport: signalR.HttpTransportType.WebSockets })
-      .build();
-
-    c.onclose(() => {
-      if (connRef.current !== c) return;
-      connRef.current = null;
-      closePeer();
-      setSlots(null);
-      setSlotSelecting(false);
-      setConnStatus('off');
-    });
-
-    c.on('SlotChanged', (list: SlotInfo[]) => setSlots(list));
-
-    c.on('SlotUnavailable', (reason: string) => {
-      closePeer();
-      setNotice(reasonText(reason));
-      setConnStatus('ing');
-      setSlotSelecting(true);
-    });
-
-    c.on('Kicked', (reason: string) => {
-      const text = reasonText(reason);
-      void (async () => {
-        connRef.current = null;
-        closePeer();
-        setSlots(null);
-        setSlotSelecting(false);
-        setConnStatus('off');
-        setNotice(text);
-        try { await c.stop(); } catch (err) { console.error(err); }
-      })();
-    });
-
-    c.on('ReceiveAnswer', async (sdpAnswer: string) => {
-      const pc = pcRef.current;
-      if (!pc) return;
-      try { await pc.setRemoteDescription({ type: 'answer', sdp: sdpAnswer }); }
-      catch (err) { console.error('[WebRTC] Failed to set remote description:', err); }
-    });
-
-    c.on('ReceiveIceCandidate', async (iceCandidateJson: string) => {
-      const pc = pcRef.current;
-      if (!pc) return;
-      try { await pc.addIceCandidate(JSON.parse(iceCandidateJson)); }
-      catch (err) { console.error('[WebRTC] Failed to add ICE candidate:', err); }
-    });
-
-    c.on('AuthFailed', () => {
-      authFailedRef.current = true;
-      setSlotSelecting(false);
-      setNotice(tRef.current.authFailed);
-    });
-
-    try {
-      await c.start();
-      connRef.current = c;
-      setConnStatus('ing');
-      setSlotSelecting(true);
-      void refreshRecommended(c);
-    } catch (err) {
-      console.error(err);
-      setSlotSelecting(false);
-      setConnStatus('off');
-      if (!authFailedRef.current) setNotice(tRef.current.connectFailed);
-    }
-  };
-
-  // 第二步：用户点了某个空闲槽位，才建立 WebRTC 并带槽号发 offer。
-  const selectSlot = async (slot: number) => {
-    const c = connRef.current;
-    if (!c || c.state !== signalR.HubConnectionState.Connected) return;
+  // 建立 WebRTC 并把 offer 发给服务端；槽位由服务端分配（不传 slot，服务端按规则给）。
+  const startPeer = async (c: signalR.HubConnection) => {
     if (pcRef.current) return;
-    setSlotSelecting(false);
-    setNotice(null);
 
     const pc = new RTCPeerConnection();
     pcRef.current = pc;
@@ -289,13 +191,89 @@ export const useGamepadConnection = ({
     try {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      // controllerType 位置只为老服务端兼容，固定 0；槽号才是真正的选择结果。
-      await c.invoke('SendOffer', offer.sdp, 0, enableVib, sensitivity, serverPassword, getClientId(), slot);
+      // slot 传 null：手柄位由服务端分配，用户不选。
+      // controllerType 位置只为老服务端兼容，固定 0，服务端已忽略。
+      await c.invoke('SendOffer', offer.sdp, 0, enableVib, sensitivity, serverPassword, getClientId(), null);
     } catch (err) {
       console.error(err);
       closePeer();
       setNotice(tRef.current.connectFailed);
-      setSlotSelecting(true);
+      setConnStatus('off');
+    }
+  };
+
+  // 一次连上：SignalR → 直接建 WebRTC，槽位由服务端分配，全程不需要用户点选。
+  const connect = async () => {
+    await resetSession();
+    setConnStatus('ing');
+    setNotice(null);
+    authFailedRef.current = false;
+
+    let url = serverUrl.trim().replace(/\/$/, '');
+    if (!url.endsWith(HUB_PATH)) url += HUB_PATH;
+
+    const c = new signalR.HubConnectionBuilder()
+      .withUrl(url, { skipNegotiation: true, transport: signalR.HttpTransportType.WebSockets })
+      .build();
+
+    c.onclose(() => {
+      if (connRef.current !== c) return;
+      connRef.current = null;
+      closePeer();
+      setSlots(null);
+      setConnStatus('off');
+    });
+
+    c.on('SlotChanged', (list: SlotInfo[]) => setSlots(list));
+
+    c.on('SlotUnavailable', (reason: string) => {
+      // 服务端没槽位可给：不建 WebRTC，直接回未连接并说明原因。
+      closePeer();
+      setNotice(reasonText(reason));
+      setConnStatus('off');
+    });
+
+    c.on('Kicked', (reason: string) => {
+      const text = reasonText(reason);
+      void (async () => {
+        connRef.current = null;
+        closePeer();
+        setSlots(null);
+        setConnStatus('off');
+        setNotice(text);
+        try { await c.stop(); } catch (err) { console.error(err); }
+      })();
+    });
+
+    c.on('ReceiveAnswer', async (sdpAnswer: string) => {
+      const pc = pcRef.current;
+      if (!pc) return;
+      try { await pc.setRemoteDescription({ type: 'answer', sdp: sdpAnswer }); }
+      catch (err) { console.error('[WebRTC] Failed to set remote description:', err); }
+    });
+
+    c.on('ReceiveIceCandidate', async (iceCandidateJson: string) => {
+      const pc = pcRef.current;
+      if (!pc) return;
+      try { await pc.addIceCandidate(JSON.parse(iceCandidateJson)); }
+      catch (err) { console.error('[WebRTC] Failed to add ICE candidate:', err); }
+    });
+
+    c.on('AuthFailed', () => {
+      authFailedRef.current = true;
+      setConnStatus('off');
+      setNotice(tRef.current.authFailed);
+    });
+
+    try {
+      await c.start();
+      connRef.current = c;
+      setConnStatus('ing');
+      await startPeer(c);
+    } catch (err) {
+      console.error(err);
+      setConnStatus('off');
+      if (!authFailedRef.current) setNotice(tRef.current.connectFailed);
     }
   };
 
@@ -320,8 +298,8 @@ export const useGamepadConnection = ({
   }, []);
 
   return {
-    connStatus, latency, controllerId, slots, slotSelecting, recommended, notice,
-    connect, selectSlot, disconnect, dismissNotice: () => setNotice(null),
+    connStatus, latency, controllerId, slots, notice,
+    connect, disconnect, dismissNotice: () => setNotice(null),
     sendButton, sendJoystick
   };
 };
