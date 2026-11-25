@@ -40,13 +40,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="gp-overlay" onClick={() => setSettingsOpen(false)}>
-      <div className="gp-modal" onClick={e => e.stopPropagation()}>
+      <div className="gp-modal" role="dialog" aria-modal="true" aria-label={t.settings} onClick={e => e.stopPropagation()}>
         <h3>{t.settings}</h3>
         
         <label>{t.profile}</label>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
           <select 
             className="gp-input" 
+            aria-label={t.profile}
             value={activeProfile}
             onChange={e => switchProfile(e.target.value)}
             style={{ flex: 1, marginBottom: 0 }}
@@ -61,18 +62,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <select 
           className="gp-input" 
           value={theme}
+          aria-label={t.buttonStyle}
           onChange={e => setTheme(e.target.value as ThemeType)}
           style={{ marginBottom: '16px' }}
         >
           <option value="xbox">{t.xboxDefault}</option>
           <option value="ps">PlayStation</option>
           <option value="nintendo">Nintendo Switch</option>
+          <option value="drums">Clone Hero Drum</option>
         </select>
 
         <label>{t.controllerTypeLabel}</label>
         <select 
           className="gp-input" 
           value={controllerType}
+          aria-label={t.controllerTypeLabel}
           onChange={e => setControllerType(parseInt(e.target.value, 10))}
           style={{ marginBottom: '16px' }}
           disabled={connStatus === 'on' || connStatus === 'ing'}

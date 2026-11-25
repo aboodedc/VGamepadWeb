@@ -22,18 +22,16 @@ namespace VGamepadWeb.Core
             // تعيين كلمة المرور في الـ Hub فوراً قبل بدء تشغيل السيرفر لتأمين القنوات مباشرة
             GamepadHub.SetPassword(password);
 
-            var builder = WebApplication.CreateBuilder();
+            // Set the web root during initialization so its file provider uses the bundled UI.
+            string wwwrootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot");
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                WebRootPath = Directory.Exists(wwwrootPath) ? wwwrootPath : null
+            });
 
             builder.Services.AddSignalR();
             builder.Services.AddSingleton<GamepadManager>();
             builder.Services.AddSingleton<WebRTCSessionManager>();
-
-            // تفعيل الكشف الديناميكي عن مجلد wwwroot المرفق مع الـ WinForm
-            string wwwrootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot");
-            if (Directory.Exists(wwwrootPath))
-            {
-                builder.Environment.WebRootPath = wwwrootPath;
-            }
 
             builder.Services.AddCors(options =>
             {

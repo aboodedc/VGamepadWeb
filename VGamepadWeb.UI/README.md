@@ -40,5 +40,51 @@
 4. A local link will be generated (e.g., `http://localhost:5173`). Open this link on your smartphone's browser (ensure both devices are on the same network).
 5. **Start your C# Backend Server**, open the settings modal (⚙️) in the UI, and enter the server's IP address to connect and start playing!
 
+## Local development and the bundled UI
+
+From the repository root, run `dotnet run --project .\VGamepadWeb.WinForm\VGamepadWeb.WinForm.csproj`,
+then click **Start Server**. The app serves the bundled UI at `http://localhost:5000`.
+On your phone, use `http://YOUR_PC_IP:5000` on the same Wi-Fi network.
+
+For frontend development, run `npm ci` and `npm run devn` in this directory.
+Use the network URL shown by Vite. In **Connection**, uncheck **Use same server as website URL**
+and enter `http://YOUR_PC_IP:5000`. `npm run build` updates the WinForm `wwwroot`;
+rebuild/restart the WinForm app to copy those files into its output folder.
+
+## iPhone screen modes
+
+The Fullscreen button uses the native API only when the browser exposes it. A rejection is displayed;
+the UI never reports native fullscreen merely because it was requested. **Screen options** offers
+**Game mode**, which hides the application toolbar while browser bars may remain visible.
+The small bottom button restores the toolbar.
+
+For standalone use, open the same server address in Safari, choose **Share → Add to Home Screen**,
+enable **Open as Web App** if offered, and launch from that icon. Standalone is identified separately
+from native fullscreen. No service worker or offline cache is installed. Behavior on local HTTP and
+browser/system chrome must be checked on the target iPhone and iOS version. Browser and standalone
+storage may differ: export/import your layout if you need to transfer it.
+
+## Clone Hero Drums and the generic editor
+
+Choose **Connection → Controller layout → Clone Hero Drum**, next to Xbox, PlayStation and Nintendo.
+It has its own six controls: four colored drum pads, an orange horizontal kick and a small `☰` Start.
+Default Xbox commands are red `B`, yellow `Y`, blue `X`, green `A`, kick `LB`, and Start `Start`.
+Bind these gamepad inputs inside Clone Hero as needed. The preset does not emulate a different device type.
+
+In **Edit**, select a control. Buttons have independent **Width** and **Height**, optional linked
+proportions, a **Gamepad command** selector, and either controller icons or editable colored pads.
+Joysticks retain a diameter on the other controller layouts. Hidden controls can be restored with
+**Buttons**, which lists only the selected controller's controls. Each controller layout has separate
+saved settings per profile. Existing battery profiles migrate their customized pads to the dedicated
+layout and gain Start; their original data is retained when switching back to the Xbox layout.
+Dimensions in a responsive drums profile are reference-canvas units; the renderer scales them
+to the available screen without overwriting their saved values when the phone rotates.
+
+`npm test` checks input ownership, immediate protocol-compatible messages, multitouch cancellation,
+legacy storage, import validation, drums sizing, and presentation capability detection. Native
+fullscreen, browser rejection, standalone, editor interactions and remapped messages were also
+checked in an automated Chromium session. Safari/Chrome on a physical iPhone and final Clone Hero
+playability still require device testing.
+
 ## 📝 License
 Please review the `LICENSE` file for details on commercial and personal usage rights.

@@ -1,6 +1,6 @@
 import React from 'react';
-import type { GamepadLayout, ThemeType } from './types';
-import { STICK_IDS, THEMES } from './constants';
+import type { GamepadLayout, Pos, ThemeType } from './types';
+import { BTN_IDS, STICK_IDS, THEMES } from './constants';
 import { useLanguage } from './LanguageContext';
 
 interface EditBarProps {
@@ -8,120 +8,93 @@ interface EditBarProps {
   selectedControl: string | null;
   layout: GamepadLayout;
   theme: ThemeType;
-  updateSize: (id: string, delta: number) => void;
-  setSize: (id: string, size: number) => void;
-  setShape: (id: string, round: boolean) => void;
+  maxWidth: number;
+  maxHeight: number;
+  setDimension: (id: string, axis: 'w' | 'h', value: number) => void;
+  patchControl: (id: string, patch: Partial<Pos>) => void;
   nudgePos: (id: string, dx: number, dy: number) => void;
   resetControl: (id: string) => void;
   setSelectedControl: (id: string | null) => void;
 }
 
-export const EditBar: React.FC<EditBarProps> = ({
-  editMode, selectedControl, layout, theme, updateSize, setSize, setShape, nudgePos, resetControl, setSelectedControl
-}) => {
+export const EditBar: React.FC<EditBarProps> = ({ editMode, selectedControl, layout, theme,
+  maxWidth, maxHeight, setDimension, patchControl, nudgePos, resetControl, setSelectedControl }) => {
   const { t } = useLanguage();
-
   if (!editMode) return null;
-
-  const getSelectedSize = () => {
-    if (!selectedControl) return 0;
-    const ctrl = layout.controls[selectedControl];
-    const isStick = (STICK_IDS as readonly string[]).includes(selectedControl);
-    const defaultW = isStick ? 120 : (THEMES[theme][selectedControl]?.w ?? 56);
-    return ctrl?.w ?? defaultW;
-  };
-
-  const getSelectedRound = () => {
-    if (!selectedControl || !THEMES[theme][selectedControl]) return false;
-    const ctrl = layout.controls[selectedControl];
-    return ctrl?.round ?? THEMES[theme][selectedControl]?.round ?? true;
-  };
-
+  if (!selectedControl) return <div className="gp-edit-bar"><div className="gp-edit-hint">{t.editHint}</div></div>;
+  const id = selectedControl;
+  const pos = layout.controls[id] ?? { x: 50, y: 50 };
+  const isStick = (STICK_IDS as readonly string[]).includes(id);
+  const cfg = THEMES[theme][id];
+  const w = pos.w ?? (isStick ? 120 : cfg.w);
+  const h = pos.h ?? (isStick ? 120 : cfg.h);
+  const round = pos.round ?? cfg?.round ?? true;
+  const locked = pos.lockAspect ?? w === h;
+  const dimension = (axis: 'w' | 'h', label: string, value: number, limit: number) => (
+    <div className="gp-edit-section">
+      <label className="gp-edit-label" htmlFor={`dimension-${axis}`}>{label}</label>
+      <div className="gp-edit-slider-wrap">
+        <button className="gp-edit-btn-val" aria-label={`${label} −`} onClick={() => setDimension(id, axis, value - 4)}>−</button>
+        <input aria-label={`${label} slider`} type="range" min="24" max={Math.max(limit, value)} value={value}
+          onChange={e => setDimension(id, axis, Number(e.target.value))} className="gp-edit-slider" />
+        <button className="gp-edit-btn-val" aria-label={`${label} +`} onClick={() => setDimension(id, axis, value + 4)}>+</button>
+        <input id={`dimension-${axis}`} aria-label={label} className="gp-dimension-number" type="number" min="24"
+          max={Math.max(limit, value)} value={Math.round(value)} onChange={e => {
+            if (e.target.value !== '') setDimension(id, axis, Number(e.target.value));
+          }} />
+      </div>
+    </div>
+  );
   return (
     <div className="gp-edit-bar">
-      {selectedControl ? (
-        <div className="gp-edit-panel">
-          <div className="gp-edit-header">
-            <span className="gp-edit-icon">
-              {(STICK_IDS as readonly string[]).includes(selectedControl) ? '🕹️' : '🔘'}
-            </span>
-            <span className="gp-edit-title">
-              {selectedControl === 'LeftStick' ? t.leftStickFull : 
-               selectedControl === 'RightStick' ? t.rightStickFull : 
-               `${t.buttonPrefix} ${selectedControl}`}
-            </span>
+      <div className="gp-edit-panel">
+        <div className="gp-edit-header">
+          <span className="gp-edit-title">{isStick ? (id === 'LeftStick' ? t.leftStickFull : t.rightStickFull) : `${t.buttonPrefix} ${id}`}</span>
+          <button className="gp-edit-action close" onClick={() => setSelectedControl(null)}>{t.closePanel}</button>
+        </div>
+        <div className="gp-edit-body">
+          <div className="gp-edit-dimensions">
+            {dimension('w', isStick ? t.diameter : t.width, w, isStick ? Math.min(maxWidth, maxHeight) : maxWidth)}
+            {!isStick && dimension('h', t.height, h, maxHeight)}
+            {!isStick && <label className="gp-checkbox"><input type="checkbox" checked={locked}
+              onChange={e => patchControl(id, { lockAspect: e.target.checked })} />{t.keepProportions}</label>}
           </div>
-
-          <div className="gp-edit-body">
-            {/* Size Control Row */}
-            <div className="gp-edit-section">
-              <span className="gp-edit-label">{t.size}</span>
-              <div className="gp-edit-slider-wrap">
-                <button className="gp-edit-btn-val" onClick={() => updateSize(selectedControl, -4)}>−</button>
-                <input 
-                  type="range" 
-                  min="24" 
-                  max="200" 
-                  value={getSelectedSize()} 
-                  onChange={(e) => setSize(selectedControl, parseInt(e.target.value, 10))} 
-                  className="gp-edit-slider"
-                />
-                <button className="gp-edit-btn-val" onClick={() => updateSize(selectedControl, 4)}>+</button>
-                <span className="gp-edit-value-badge">{getSelectedSize()}px</span>
+          {!isStick && <div className="gp-edit-section gp-button-options">
+            <label>{t.shape}<select aria-label={t.shape} className="gp-input" value={round ? 'round' : 'rect'}
+              onChange={e => {
+                const circular = e.target.value === 'round';
+                patchControl(id, circular ? { round: true, h: w, lockAspect: true } : { round: false, lockAspect: false });
+              }}><option value="round">{t.circular}</option><option value="rect">{t.rectangle}</option></select></label>
+            <label>{t.command}<select aria-label={t.command} className="gp-input" value={pos.command ?? cfg.command ?? id}
+              onChange={e => patchControl(id, { command: e.target.value as Pos['command'] })}>
+              {BTN_IDS.map(command => <option key={command} value={command}>{command}</option>)}
+            </select></label>
+            <label>{t.appearance}<select aria-label={t.appearance} className="gp-input" value={pos.appearance ?? cfg.appearance ?? 'icon'}
+              onChange={e => patchControl(id, { appearance: e.target.value as Pos['appearance'] })}>
+              <option value="icon">{t.iconStyle}</option><option value="pad">{t.padStyle}</option>
+            </select></label>
+            {(pos.appearance ?? cfg.appearance) === 'pad' && <div className="gp-pad-options">
+              <label>{t.padLabel}<input className="gp-input" aria-label={t.padLabel} maxLength={40} value={pos.label ?? cfg.label}
+                onChange={e => patchControl(id, { label: e.target.value })} /></label>
+              <label>{t.padColor}<input aria-label={t.padColor} type="color" value={pos.color ?? cfg.color}
+                onChange={e => patchControl(id, { color: e.target.value })} /></label>
+            </div>}
+          </div>}
+          <div className="gp-edit-section">
+            <span className="gp-edit-label">{t.position}</span>
+            <div className="gp-edit-nudge">
+              <button className="gp-nudge-btn up" aria-label="Move up" onClick={() => nudgePos(id, 0, -1)}>▲</button>
+              <div className="gp-nudge-mid">
+                <button className="gp-nudge-btn left" aria-label="Move left" onClick={() => nudgePos(id, -1, 0)}>◀</button>
+                <span className="gp-nudge-title">{t.align}</span>
+                <button className="gp-nudge-btn right" aria-label="Move right" onClick={() => nudgePos(id, 1, 0)}>▶</button>
               </div>
+              <button className="gp-nudge-btn down" aria-label="Move down" onClick={() => nudgePos(id, 0, 1)}>▼</button>
             </div>
-
-            {/* Shape Control Row (Only for buttons) */}
-            {THEMES[theme][selectedControl] && (
-              <div className="gp-edit-section">
-                <span className="gp-edit-label">{t.shape}</span>
-                <div className="gp-edit-segmented">
-                  <button 
-                    className={`gp-edit-seg-btn ${getSelectedRound() ? 'active' : ''}`}
-                    onClick={() => setShape(selectedControl, true)}
-                  >
-                    {t.circular}
-                  </button>
-                  <button 
-                    className={`gp-edit-seg-btn ${!getSelectedRound() ? 'active' : ''}`}
-                    onClick={() => setShape(selectedControl, false)}
-                  >
-                    {t.rectangle}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Fine Nudge Control Row */}
-            <div className="gp-edit-section">
-              <span className="gp-edit-label">{t.position}</span>
-              <div className="gp-edit-nudge">
-                <button className="gp-nudge-btn up" onClick={() => nudgePos(selectedControl, 0, -1)}>▲</button>
-                <div className="gp-nudge-mid">
-                  <button className="gp-nudge-btn left" onClick={() => nudgePos(selectedControl, -1, 0)}>◀</button>
-                  <span className="gp-nudge-title">{t.align}</span>
-                  <button className="gp-nudge-btn right" onClick={() => nudgePos(selectedControl, 1, 0)}>▶</button>
-                </div>
-                <button className="gp-nudge-btn down" onClick={() => nudgePos(selectedControl, 0, 1)}>▼</button>
-              </div>
-            </div>
-          </div>
-
-          <div className="gp-edit-actions">
-            <button className="gp-edit-action reset" onClick={() => resetControl(selectedControl)}>
-              {t.resetButton}
-            </button>
-            <button className="gp-edit-action close" onClick={() => setSelectedControl(null)}>
-              {t.closePanel}
-            </button>
+            <button className="gp-edit-action reset" onClick={() => resetControl(id)}>{t.resetButton}</button>
           </div>
         </div>
-      ) : (
-        <div className="gp-edit-hint">
-          <span className="gp-edit-hint-pulse"></span>
-          <span className="gp-edit-hint-text">{t.editHint}</span>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
