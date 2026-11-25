@@ -952,6 +952,13 @@ html, body {
 .gp-btn.gp-pad.round { border-radius: 50%; }
 .gp-pad-command { font-size: 10px; font-weight: 600; opacity: 0.75; letter-spacing: 0; pointer-events: none; }
 .gp-btn.gp-pad.active { transform: scale(0.97); }
+.gp-btn.gp-with-icon { padding: var(--icon-padding); overflow: hidden; }
+.gp-button-content, .gp-button-text { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--icon-gap); min-width: 0; }
+.gp-button-content { max-width: 100%; max-height: 100%; }
+.gp-icon-horizontal .gp-button-content { flex-direction: row; gap: calc(var(--icon-gap) * 2); }
+.gp-button-icon { display: block; flex-shrink: 0; }
+.gp-button-content, .gp-button-content * { pointer-events: none; user-select: none; }
+.gp-with-icon .gp-pad-command { font-size: var(--icon-caption-size); }
 .gp-ctrl:focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; }
 .gp-muted { color: #94a3b8; font-size: 12px; line-height: 1.5; }
 .gp-fullscreen-help p { margin: 12px 0; line-height: 1.6; }

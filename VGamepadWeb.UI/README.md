@@ -80,6 +80,12 @@ layout and gain Start; their original data is retained when switching back to th
 Dimensions in a responsive drums profile are reference-canvas units; the renderer scales them
 to the available screen without overwriting their saved values when the phone rotates.
 
+**Edit → Button icon** offers Drum Pad (simple), Drum Pad (with sticks), Kick and Cymbal SVGs for any button. Select **None (text only)**
+to remove it, or clear **Show button text** for an icon alone. New drums layouts include pad and kick
+icons; existing saved layouts remain text-only until edited. Icon choices and text visibility are
+included in layout storage and JSON export/import. Icons do not receive pointer events. The Cymbal
+option provides artwork only: no additional cymbal controls or Pro Drums mode are added.
+
 `npm test` checks input ownership, immediate protocol-compatible messages, multitouch cancellation,
 legacy storage, import validation, drums sizing, and presentation capability detection. Native
 fullscreen, browser rejection, standalone, editor interactions and remapped messages were also

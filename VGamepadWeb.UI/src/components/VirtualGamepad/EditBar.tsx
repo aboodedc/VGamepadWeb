@@ -73,6 +73,18 @@ export const EditBar: React.FC<EditBarProps> = ({ editMode, selectedControl, lay
               onChange={e => patchControl(id, { appearance: e.target.value as Pos['appearance'] })}>
               <option value="icon">{t.iconStyle}</option><option value="pad">{t.padStyle}</option>
             </select></label>
+            <label>{t.buttonIcon}<select aria-label={t.buttonIcon} className="gp-input" value={pos.icon ?? ''}
+              onChange={e => patchControl(id, e.target.value
+                ? { icon: e.target.value as Pos['icon'] }
+                : { icon: null, showLabel: true })}>
+              <option value="">{t.noIcon}</option>
+              <option value="snare">{t.snareIcon}</option>
+              <option value="drum-pad">{t.drumPadIcon}</option>
+              <option value="kick">{t.kickIcon}</option>
+              <option value="cymbal">{t.cymbalIcon}</option>
+            </select></label>
+            {pos.icon && <label className="gp-checkbox"><input type="checkbox" checked={pos.showLabel !== false}
+              onChange={e => patchControl(id, { showLabel: e.target.checked })} />{t.showButtonText}</label>}
             {(pos.appearance ?? cfg.appearance) === 'pad' && <div className="gp-pad-options">
               <label>{t.padLabel}<input className="gp-input" aria-label={t.padLabel} maxLength={40} value={pos.label ?? cfg.label}
                 onChange={e => patchControl(id, { label: e.target.value })} /></label>

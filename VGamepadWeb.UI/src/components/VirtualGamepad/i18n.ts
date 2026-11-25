@@ -2,6 +2,7 @@ export type Language = 'ar' | 'en';
 
 export const translations = {
   ar: {
+    buttonIcon: 'أيقونة الزر', noIcon: 'بدون أيقونة (نص فقط)', snareIcon: 'طبل بدون عصي', drumPadIcon: 'طبل مع عصي', kickIcon: 'طبل الجهير', cymbalIcon: 'صنج', showButtonText: 'إظهار نص الزر',
     width: 'العرض', height: 'الارتفاع', diameter: 'القطر', keepProportions: 'الحفاظ على النسب',
     command: 'زر اليد المرسل', appearance: 'المظهر', iconStyle: 'أيقونة', padStyle: 'لوحة ملونة',
     padLabel: 'التسمية', padColor: 'اللون', screenOptions: 'خيارات الشاشة', standalone: 'تطبيق مستقل',
@@ -90,6 +91,7 @@ export const translations = {
     aboutMIT: 'محمي برخصة MIT المفتوحة',
   },
   en: {
+    buttonIcon: 'Button icon', noIcon: 'None (text only)', snareIcon: 'Drum Pad (simple)', drumPadIcon: 'Drum Pad (with sticks)', kickIcon: 'Kick', cymbalIcon: 'Cymbal', showButtonText: 'Show button text',
     width: 'Width', height: 'Height', diameter: 'Diameter', keepProportions: 'Keep proportions',
     command: 'Gamepad command', appearance: 'Appearance', iconStyle: 'Controller icon', padStyle: 'Colored pad',
     padLabel: 'Label', padColor: 'Color', screenOptions: 'Screen options', standalone: 'Standalone',

@@ -27,6 +27,8 @@ export function migrateDrumsLayout(layout: GamepadLayout): GamepadLayout {
     const source = layout.controls[dedicated ? id : legacyIds[id] ?? id];
     if (source && (id !== 'Start' || dedicated || source.hidden === false)) {
       defaults.controls[id] = { ...defaults.controls[id], ...source };
+      // New preset artwork must not change an existing text-only layout.
+      if (source.icon === undefined) delete defaults.controls[id].icon;
     }
   }
   return { ...layout, ...defaults, referenceCanvas: layout.referenceCanvas ?? defaults.referenceCanvas };

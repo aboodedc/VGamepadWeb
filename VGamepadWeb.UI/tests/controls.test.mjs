@@ -4,7 +4,7 @@ import { createServer } from 'vite';
 
 let server, createButtonInput, createDrumsLayout, getLayoutScale, loadLayout, parseLayout, getPresentationState, getButtonIds, getStickIds, THEMES, resolveProfileTheme, readInitialTheme;
 before(async () => {
-  server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+  server = await createServer({ server: { middlewareMode: true, ws: false }, appType: 'custom', logLevel: 'error' });
   ({ createButtonInput } = await server.ssrLoadModule('/src/components/VirtualGamepad/buttonInput.ts'));
   ({ createDrumsLayout, getLayoutScale } = await server.ssrLoadModule('/src/components/VirtualGamepad/presets.ts'));
   ({ loadLayout, parseLayout, resolveProfileTheme, readInitialTheme } = await server.ssrLoadModule('/src/components/VirtualGamepad/utils.ts'));

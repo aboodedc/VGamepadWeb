@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import type { Pos, BtnCfg } from './types';
 import { clamp } from './utils';
+import { ButtonIcon } from './ButtonIcon';
 
 export const GpButton: React.FC<{
   id: string; cfg: BtnCfg; pos: Pos;
@@ -26,6 +27,11 @@ export const GpButton: React.FC<{
   const effectiveRound = pos.round ?? cfg.round;
   const color = pos.color ?? cfg.color;
   const isPad = (pos.appearance ?? cfg.appearance) === 'pad';
+  const icon = pos.icon;
+  const showLabel = !icon || pos.showLabel !== false;
+  const horizontalIcon = effectiveW >= effectiveH * 3;
+  const shortSide = Math.min(effectiveW, effectiveH);
+  const iconSize = shortSide * (!showLabel || horizontalIcon ? 0.62 : 0.32);
 
   useEffect(() => {
     const move = (e: TouchEvent) => {
@@ -124,20 +130,29 @@ export const GpButton: React.FC<{
       onContextMenu={e => e.preventDefault()}
     >
       <div
-        className={`gp-btn ${isPad ? 'gp-pad' : ''} ${active ? 'active' : ''} ${effectiveRound ? 'round' : 'rect'} ${showHitboxes ? 'show-hitbox' : ''}`}
+        className={`gp-btn ${isPad ? 'gp-pad' : ''} ${icon ? 'gp-with-icon' : ''} ${horizontalIcon ? 'gp-icon-horizontal' : ''} ${active ? 'active' : ''} ${effectiveRound ? 'round' : 'rect'} ${showHitboxes ? 'show-hitbox' : ''}`}
         style={{
           width: effectiveW,
           height: effectiveH,
-          fontSize: isPad ? clamp(Math.min(effectiveW, effectiveH) * 0.2, 11, 22) : Math.min(effectiveW, effectiveH) * 0.9,
+          fontSize: icon ? clamp(shortSide * 0.2, 4, 22) : isPad ? clamp(Math.min(effectiveW, effectiveH) * 0.2, 11, 22) : Math.min(effectiveW, effectiveH) * 0.9,
           color: isPad ? '#fff' : active ? '#fff' : color,
           ...(isPad ? { '--pad-color': color } as React.CSSProperties : {}),
+          ...(icon ? { '--icon-gap': `${Math.min(6, shortSide * 0.04)}px`, '--icon-padding': `${Math.min(10, shortSide * 0.08)}px`, '--icon-caption-size': `${Math.min(10, shortSide * 0.15)}px` } as React.CSSProperties : {}),
           filter: active
             ? `drop-shadow(0 0 8px ${color}) brightness(1.3)`
             : `drop-shadow(0 2px 4px rgba(0,0,0,0.6))`,
         }}
       >
-        {pos.label ?? cfg.label}
-        {isPad && id !== 'Start' && <span className="gp-pad-command">{pos.command ?? cfg.command ?? id}</span>}
+        {icon ? <div className="gp-button-content">
+          <ButtonIcon name={icon} size={iconSize} />
+          {showLabel && <div className="gp-button-text">
+            <span>{pos.label ?? cfg.label}</span>
+            {isPad && id !== 'Start' && <span className="gp-pad-command">{pos.command ?? cfg.command ?? id}</span>}
+          </div>}
+        </div> : <>
+          {pos.label ?? cfg.label}
+          {isPad && id !== 'Start' && <span className="gp-pad-command">{pos.command ?? cfg.command ?? id}</span>}
+        </>}
       </div>
       {editMode && <span className="gp-ctrl-label">{id}</span>}
     </div>

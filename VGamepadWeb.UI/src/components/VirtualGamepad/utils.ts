@@ -14,7 +14,8 @@ export function parseLayout(value: unknown): GamepadLayout {
     if (pos.appearance !== undefined && !['icon', 'pad'].includes(pos.appearance)) throw new Error('Invalid appearance');
     if (pos.label !== undefined && (typeof pos.label !== 'string' || pos.label.length > 40)) throw new Error('Invalid label');
     if (pos.color !== undefined && (typeof pos.color !== 'string' || !/^#[\da-f]{6}$/i.test(pos.color))) throw new Error('Invalid color');
-    for (const field of ['round', 'hidden', 'lockAspect'] as const) {
+    if (pos.icon !== undefined && pos.icon !== null && !['snare', 'drum-pad', 'kick', 'cymbal'].includes(pos.icon)) throw new Error('Invalid icon');
+    for (const field of ['round', 'hidden', 'lockAspect', 'showLabel'] as const) {
       if (pos[field] !== undefined && typeof pos[field] !== 'boolean') throw new Error('Invalid flag');
     }
   }

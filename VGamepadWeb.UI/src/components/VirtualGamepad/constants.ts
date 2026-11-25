@@ -83,11 +83,11 @@ export const THEMES: Record<ThemeType, Record<string, BtnCfg>> = {
     RS:    { label: '\u21BB', color: '#334155', w: 34, h: 34, round: true  },
   },
   drums: {
-    DrumRed: { label: 'RED', color: '#ef4444', w: 136, h: 136, round: true, command: 'B', appearance: 'pad' },
-    DrumYellow: { label: 'YELLOW', color: '#facc15', w: 302, h: 302, round: true, command: 'Y', appearance: 'pad' },
-    DrumBlue: { label: 'BLUE', color: '#3b82f6', w: 310, h: 310, round: true, command: 'X', appearance: 'pad' },
-    DrumGreen: { label: 'GREEN', color: '#22c55e', w: 138, h: 138, round: true, command: 'A', appearance: 'pad' },
-    Kick: { label: 'KICK', color: '#f97316', w: 812, h: 80, round: false, command: 'LB', appearance: 'pad' },
+    DrumRed: { label: 'RED', color: '#ef4444', w: 136, h: 136, round: true, command: 'B', appearance: 'pad', icon: 'snare' },
+    DrumYellow: { label: 'YELLOW', color: '#facc15', w: 302, h: 302, round: true, command: 'Y', appearance: 'pad', icon: 'drum-pad' },
+    DrumBlue: { label: 'BLUE', color: '#3b82f6', w: 310, h: 310, round: true, command: 'X', appearance: 'pad', icon: 'drum-pad' },
+    DrumGreen: { label: 'GREEN', color: '#22c55e', w: 138, h: 138, round: true, command: 'A', appearance: 'pad', icon: 'snare' },
+    Kick: { label: 'KICK', color: '#f97316', w: 812, h: 80, round: false, command: 'LB', appearance: 'pad', icon: 'kick' },
     Start: { label: '☰', color: '#64748b', w: 48, h: 34, round: false, command: 'Start', appearance: 'pad' },
   }
 };
