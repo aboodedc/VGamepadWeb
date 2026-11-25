@@ -83,8 +83,43 @@ to the available screen without overwriting their saved values when the phone ro
 **Edit → Button icon** offers Drum Pad (simple), Drum Pad (with sticks), Kick and Cymbal SVGs for any button. Select **None (text only)**
 to remove it, or clear **Show button text** for an icon alone. New drums layouts include pad and kick
 icons; existing saved layouts remain text-only until edited. Icon choices and text visibility are
-included in layout storage and JSON export/import. Icons do not receive pointer events. The Cymbal
-option provides artwork only: no additional cymbal controls or Pro Drums mode are added.
+included in layout storage and JSON export/import. Icons do not receive pointer events. The simple
+Drums layout retains its existing six controls; cymbals belong to the separate Pro Drums layout.
+
+## Clone Hero Pro Drums
+
+Choose **Connection → Controller layout → Clone Hero Pro Drums**. This is a dedicated layout with
+four drum pads, three smaller cymbals above their corresponding pads, a wide orange kick below,
+and Start. All nine visual controls use the existing editor, icons and immediate input transport.
+The default touch rectangles have gaps between them, including cymbals versus pads. Landscape
+is recommended; toolbar-free Game mode provides more room on shorter phone screens.
+
+| Control | Default gamepad command |
+| --- | --- |
+| Red pad | B |
+| Yellow pad | Y |
+| Blue pad | X |
+| Green pad | A |
+| Yellow cymbal | RB |
+| Blue cymbal | LS (left stick click) |
+| Green cymbal | RS (right stick click) |
+| Kick pedal | LB |
+| Start | Start |
+
+These nine assignments are distinct digital buttons already supported by the Xbox 360 backend.
+Its current map accepts 15 named buttons (including Guide), plus LT/RT trigger values. The Pro
+defaults use neither Guide nor triggers nor D-pad directions. They do not consume joystick axes.
+Bind each input to its intended pad/cymbal/kick action and select the appropriate drum mode inside
+Clone Hero. This frontend layout continues to emulate the selected gamepad type; it does not
+identify itself as a native drum kit and does not send velocity or pressure data.
+
+Pro settings use `gamepad_layout_v2_<profile>_pro-drums`, independently of the simple layout's
+`gamepad_layout_v2_<profile>_drums`. Switching, importing/exporting JSON, hiding, resizing, remapping
+and resetting Pro controls do not change the simple preset or its saved configurations. Importing
+a Pro export selects Pro Drums automatically; **Reset** restores only the selected layout.
+The input system supports independent simultaneous notes; the actual number of concurrent fingers
+depends on the phone/browser. Physical iPhone ergonomics and final Clone Hero bindings need device
+verification.
 
 `npm test` checks input ownership, immediate protocol-compatible messages, multitouch cancellation,
 legacy storage, import validation, drums sizing, and presentation capability detection. Native

@@ -2,20 +2,50 @@ import { DEFAULT_LAYOUT, THEMES } from './constants';
 import type { GamepadLayout, Pos, ThemeType } from './types';
 
 export function createDrumsLayout(): GamepadLayout {
-  const controls: Record<string, Pos> = {};
-  const positions: Record<string, { x: number; y: number }> = {
+  return createDrumsPreset('drums', {
     DrumRed: { x: 5.6, y: 22 }, DrumYellow: { x: 19.2, y: 1.1 },
     DrumBlue: { x: 49.8, y: 0.2 }, DrumGreen: { x: 80.8, y: 24.3 },
     Kick: { x: 9.5, y: 70 }, Start: { x: 89.7, y: 0.4 },
-  };
-  for (const [id, cfg] of Object.entries(THEMES.drums)) {
+  });
+}
+
+export function createProDrumsLayout(): GamepadLayout {
+  return createDrumsPreset('pro-drums', {
+    DrumRed: { x: 4, y: 42 }, DrumYellow: { x: 20, y: 24 },
+    DrumBlue: { x: 49, y: 24 }, DrumGreen: { x: 79, y: 42 },
+    CymbalYellow: { x: 26, y: 2 }, CymbalBlue: { x: 55, y: 2 }, CymbalGreen: { x: 79, y: 18 },
+    Kick: { x: 6, y: 82 }, Start: { x: 92, y: 1 },
+  });
+}
+
+function createDrumsPreset(theme: 'drums' | 'pro-drums', positions: Record<string, { x: number; y: number }>): GamepadLayout {
+  const controls: Record<string, Pos> = {};
+  for (const [id, cfg] of Object.entries(THEMES[theme])) {
     controls[id] = { ...positions[id], ...cfg, lockAspect: cfg.round };
   }
-  return { version: 2, presetId: 'clone-hero-drums', referenceCanvas: { width: 1000, height: 428 }, controls };
+  return { version: 2, presetId: theme === 'drums' ? 'clone-hero-drums' : 'clone-hero-pro-drums', referenceCanvas: { width: 1000, height: 428 }, controls };
+}
+
+export function getPresetTheme(layout: GamepadLayout): 'drums' | 'pro-drums' | null {
+  if (layout.presetId === 'clone-hero-drums') return 'drums';
+  if (layout.presetId === 'clone-hero-pro-drums') return 'pro-drums';
+  return null;
 }
 
 export function getLayoutDefaults(layout: GamepadLayout, theme?: ThemeType): GamepadLayout {
-  return (theme ? theme === 'drums' : layout.presetId === 'clone-hero-drums') ? createDrumsLayout() : structuredClone(DEFAULT_LAYOUT);
+  switch (theme ?? getPresetTheme(layout)) {
+    case 'drums': return createDrumsLayout();
+    case 'pro-drums': return createProDrumsLayout();
+    default: return structuredClone(DEFAULT_LAYOUT);
+  }
+}
+
+export function restoreProDrumsLayout(layout: GamepadLayout): GamepadLayout {
+  const defaults = createProDrumsLayout();
+  for (const id of Object.keys(defaults.controls)) {
+    defaults.controls[id] = { ...defaults.controls[id], ...layout.controls[id] };
+  }
+  return { ...layout, ...defaults, referenceCanvas: layout.referenceCanvas ?? defaults.referenceCanvas };
 }
 
 // Old battery profiles are read without changing their original Xbox/PS/Nintendo records.

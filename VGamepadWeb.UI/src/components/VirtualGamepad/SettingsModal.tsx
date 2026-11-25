@@ -70,6 +70,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <option value="ps">PlayStation</option>
           <option value="nintendo">Nintendo Switch</option>
           <option value="drums">Clone Hero Drum</option>
+          <option value="pro-drums">Clone Hero Pro Drums</option>
         </select>
 
         <label>{t.controllerTypeLabel}</label>

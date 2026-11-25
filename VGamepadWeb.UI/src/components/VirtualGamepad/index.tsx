@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { GamepadLayout, Pos, Profile, ThemeType } from './types';
-import { LAYOUT_KEY, URL_KEY, DEFAULT_LAYOUT, THEMES, getButtonIds, getStickIds, STICK_IDS } from './constants';
+import { LAYOUT_KEY, URL_KEY, DEFAULT_LAYOUT, THEMES, getButtonIds, getStickIds, STICK_IDS, isDrumsTheme } from './constants';
 import { loadLayout, clamp, parseLayout, readInitialTheme, resolveProfileTheme } from './utils';
-import { createDrumsLayout, getLayoutDefaults, getLayoutScale, migrateDrumsLayout } from './presets';
+import { getLayoutDefaults, getLayoutScale, getPresetTheme, migrateDrumsLayout, restoreProDrumsLayout } from './presets';
 import { GpButton } from './GpButton';
 import { GpJoystick } from './GpJoystick';
 import { TopBar } from './TopBar';
@@ -54,7 +54,7 @@ const VirtualGamepadInner: React.FC = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 320 });
   const layoutScale = getLayoutScale(layout, canvasSize.width, canvasSize.height);
-  const defaults = useMemo(() => theme === 'drums' ? createDrumsLayout() : structuredClone(DEFAULT_LAYOUT), [theme]);
+  const defaults = useMemo(() => getLayoutDefaults(DEFAULT_LAYOUT, theme), [theme]);
   const buttonIds = getButtonIds(theme);
   const stickIds = getStickIds(theme);
 
@@ -234,9 +234,9 @@ const VirtualGamepadInner: React.FC = () => {
         const imported = parseLayout(JSON.parse(reader.result as string));
         input.releaseAll();
         localStorage.setItem(`${LAYOUT_KEY}_${activeProfile}_${theme}_backup`, JSON.stringify(layout));
-        const nextTheme = imported.presetId === 'clone-hero-drums' ? 'drums' : theme === 'drums' ? 'xbox' : theme;
+        const nextTheme = getPresetTheme(imported) ?? (isDrumsTheme(theme) ? 'xbox' : theme);
         setTheme(nextTheme);
-        setLayout(nextTheme === 'drums' ? migrateDrumsLayout(imported) : imported);
+        setLayout(nextTheme === 'drums' ? migrateDrumsLayout(imported) : nextTheme === 'pro-drums' ? restoreProDrumsLayout(imported) : imported);
         setSelectedControl(null);
       } catch { alert(t.readFileFailed); }
     };
@@ -281,7 +281,7 @@ const VirtualGamepadInner: React.FC = () => {
           if (visibilityMenuOpen) setVisibilityMenuOpen(false);
         }}
       >
-        {theme === 'drums' && <div className="gp-landscape-hint">{t.rotateForDrums}</div>}
+        {isDrumsTheme(theme) && <div className="gp-landscape-hint">{t.rotateForDrums}</div>}
         {buttonIds.map(id => {
           const pos = layout.controls[id] || defaults.controls[id] || { x: 50, y: 50 };
           if (pos.hidden) return null;

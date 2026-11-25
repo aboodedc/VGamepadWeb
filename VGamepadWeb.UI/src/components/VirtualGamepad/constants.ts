@@ -3,6 +3,15 @@ import type { ThemeType, BtnCfg, GamepadLayout } from './types';
 export const LAYOUT_KEY = 'gamepad_layout_v2';
 export const URL_KEY = 'gamepad_server_url';
 
+const DRUM_BUTTONS = {
+  DrumRed: { label: 'RED', color: '#ef4444', w: 136, h: 136, round: true, command: 'B', appearance: 'pad', icon: 'snare' },
+  DrumYellow: { label: 'YELLOW', color: '#facc15', w: 302, h: 302, round: true, command: 'Y', appearance: 'pad', icon: 'drum-pad' },
+  DrumBlue: { label: 'BLUE', color: '#3b82f6', w: 310, h: 310, round: true, command: 'X', appearance: 'pad', icon: 'drum-pad' },
+  DrumGreen: { label: 'GREEN', color: '#22c55e', w: 138, h: 138, round: true, command: 'A', appearance: 'pad', icon: 'snare' },
+  Kick: { label: 'KICK', color: '#f97316', w: 812, h: 80, round: false, command: 'LB', appearance: 'pad', icon: 'kick' },
+  Start: { label: '☰', color: '#64748b', w: 48, h: 34, round: false, command: 'Start', appearance: 'pad' },
+} satisfies Record<string, BtnCfg>;
+
 export const THEMES: Record<ThemeType, Record<string, BtnCfg>> = {
   xbox: {
     // Face buttons: xbox-a=U+21D3, xbox-b=U+21D2, xbox-x=U+21D0, xbox-y=U+21D1
@@ -82,21 +91,26 @@ export const THEMES: Record<ThemeType, Record<string, BtnCfg>> = {
     LS:    { label: '\u21BA', color: '#334155', w: 34, h: 34, round: true  },
     RS:    { label: '\u21BB', color: '#334155', w: 34, h: 34, round: true  },
   },
-  drums: {
-    DrumRed: { label: 'RED', color: '#ef4444', w: 136, h: 136, round: true, command: 'B', appearance: 'pad', icon: 'snare' },
-    DrumYellow: { label: 'YELLOW', color: '#facc15', w: 302, h: 302, round: true, command: 'Y', appearance: 'pad', icon: 'drum-pad' },
-    DrumBlue: { label: 'BLUE', color: '#3b82f6', w: 310, h: 310, round: true, command: 'X', appearance: 'pad', icon: 'drum-pad' },
-    DrumGreen: { label: 'GREEN', color: '#22c55e', w: 138, h: 138, round: true, command: 'A', appearance: 'pad', icon: 'snare' },
-    Kick: { label: 'KICK', color: '#f97316', w: 812, h: 80, round: false, command: 'LB', appearance: 'pad', icon: 'kick' },
-    Start: { label: '☰', color: '#64748b', w: 48, h: 34, round: false, command: 'Start', appearance: 'pad' },
-  }
+  drums: DRUM_BUTTONS,
+  'pro-drums': {
+    DrumRed: { ...DRUM_BUTTONS.DrumRed, w: 140, h: 140 },
+    DrumYellow: { ...DRUM_BUTTONS.DrumYellow, w: 236, h: 236 },
+    DrumBlue: { ...DRUM_BUTTONS.DrumBlue, w: 236, h: 236 },
+    DrumGreen: { ...DRUM_BUTTONS.DrumGreen, w: 140, h: 140 },
+    CymbalYellow: { label: 'CYMBAL Y', color: '#facc15', w: 136, h: 72, round: true, command: 'RB', appearance: 'pad', icon: 'cymbal' },
+    CymbalBlue: { label: 'CYMBAL B', color: '#3b82f6', w: 136, h: 72, round: true, command: 'LS', appearance: 'pad', icon: 'cymbal' },
+    CymbalGreen: { label: 'CYMBAL G', color: '#22c55e', w: 136, h: 72, round: true, command: 'RS', appearance: 'pad', icon: 'cymbal' },
+    Kick: { ...DRUM_BUTTONS.Kick, w: 880, h: 68 },
+    Start: { ...DRUM_BUTTONS.Start, w: 44, h: 30 },
+  },
 };
 
 export const BTN_IDS = Object.keys(THEMES.xbox);
 export const STICK_IDS = ['LeftStick', 'RightStick'] as const;
 
 export function getButtonIds(theme: ThemeType): string[] { return Object.keys(THEMES[theme]); }
-export function getStickIds(theme: ThemeType): readonly string[] { return theme === 'drums' ? [] : STICK_IDS; }
+export function isDrumsTheme(theme: ThemeType): boolean { return theme === 'drums' || theme === 'pro-drums'; }
+export function getStickIds(theme: ThemeType): readonly string[] { return isDrumsTheme(theme) ? [] : STICK_IDS; }
 
 export const DEFAULT_LAYOUT: GamepadLayout = {
   version: 2,

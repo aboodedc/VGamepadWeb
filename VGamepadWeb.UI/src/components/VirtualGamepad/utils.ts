@@ -1,13 +1,13 @@
 import type { ThemeType, GamepadLayout } from './types';
-import { LAYOUT_KEY, THEMES, BTN_IDS, STICK_IDS } from './constants';
-import { createDrumsLayout, getLayoutDefaults, migrateDrumsLayout } from './presets';
+import { LAYOUT_KEY, THEMES, BTN_IDS, STICK_IDS, DEFAULT_LAYOUT, isDrumsTheme } from './constants';
+import { getLayoutDefaults, migrateDrumsLayout, restoreProDrumsLayout } from './presets';
 
 export function parseLayout(value: unknown): GamepadLayout {
   if (!value || typeof value !== 'object' || !('controls' in value)) throw new Error('Invalid layout');
   const layout = value as GamepadLayout;
   if (!layout.controls || typeof layout.controls !== 'object' || Array.isArray(layout.controls)) throw new Error('Invalid controls');
   for (const [id, pos] of Object.entries(layout.controls)) {
-    if (![...BTN_IDS, ...STICK_IDS, ...Object.keys(THEMES.drums)].includes(id)) throw new Error('Unknown control');
+    if (![...Object.values(THEMES).flatMap(controls => Object.keys(controls)), ...STICK_IDS].includes(id)) throw new Error('Unknown control');
     if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)) throw new Error('Invalid position');
     if ([pos.w, pos.h].some(size => size !== undefined && (!Number.isFinite(size) || size < 24 || size > 4096))) throw new Error('Invalid size');
     if (pos.command !== undefined && !BTN_IDS.includes(pos.command)) throw new Error('Invalid command');
@@ -19,7 +19,7 @@ export function parseLayout(value: unknown): GamepadLayout {
       if (pos[field] !== undefined && typeof pos[field] !== 'boolean') throw new Error('Invalid flag');
     }
   }
-  if (layout.presetId !== undefined && layout.presetId !== 'clone-hero-drums') throw new Error('Invalid preset');
+  if (layout.presetId !== undefined && !['clone-hero-drums', 'clone-hero-pro-drums'].includes(layout.presetId)) throw new Error('Invalid preset');
   if (layout.referenceCanvas && (!Number.isFinite(layout.referenceCanvas.width) || !Number.isFinite(layout.referenceCanvas.height)
     || layout.referenceCanvas.width <= 0 || layout.referenceCanvas.height <= 0)) throw new Error('Invalid canvas');
   return { ...layout, version: layout.version ?? 2 };
@@ -39,6 +39,10 @@ export function loadLayout(theme: ThemeType, profileId: string): GamepadLayout {
     }
     if (raw) {
       const layout = parseLayout(JSON.parse(raw));
+      if (theme === 'pro-drums') {
+        if (layout.presetId !== 'clone-hero-pro-drums') throw new Error('Invalid Pro Drums layout');
+        return restoreProDrumsLayout(layout);
+      }
       if (theme === 'drums') return migrateDrumsLayout(layout);
       if (layout.presetId === 'clone-hero-drums') {
         localStorage.setItem(`${key}_legacy_drums`, raw);
@@ -48,7 +52,7 @@ export function loadLayout(theme: ThemeType, profileId: string): GamepadLayout {
     }
     if (theme === 'drums') {
       const preferred = localStorage.getItem('gamepad_theme');
-      const variants = [...new Set([preferred, 'xbox', 'ps', 'nintendo'])].filter(variant => variant && variant !== 'drums');
+      const variants = [...new Set([preferred, 'xbox', 'ps', 'nintendo'])].filter(variant => variant && variant !== 'drums' && variant !== 'pro-drums');
       for (const variant of variants) {
         const legacyKey = `${LAYOUT_KEY}_${profileId}_${variant}`;
         const candidates = [localStorage.getItem(legacyKey), localStorage.getItem(`${legacyKey}_legacy_drums`),
@@ -68,11 +72,11 @@ export function loadLayout(theme: ThemeType, profileId: string): GamepadLayout {
       try { localStorage.setItem(`${key}_backup`, raw); } catch { /* Storage may be full. */ }
     }
   }
-  return getLayoutDefaults(createDrumsLayout(), theme);
+  return getLayoutDefaults(DEFAULT_LAYOUT, theme);
 }
 
 export function resolveProfileTheme(theme: ThemeType, profileId: string): ThemeType {
-  if (theme === 'drums') return theme;
+  if (isDrumsTheme(theme)) return theme;
   try {
     const raw = localStorage.getItem(`${LAYOUT_KEY}_${profileId}_${theme}`)
       ?? (profileId === 'default' ? localStorage.getItem(`${LAYOUT_KEY}_${theme}`) : null);

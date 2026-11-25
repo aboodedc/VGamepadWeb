@@ -14,9 +14,9 @@ export interface Pos {
 export interface GamepadLayout {
   version: number;
   controls: Record<string, Pos>;
-  presetId?: 'clone-hero-drums';
+  presetId?: 'clone-hero-drums' | 'clone-hero-pro-drums';
   referenceCanvas?: { width: number; height: number };
 }
-export type ThemeType = 'xbox' | 'ps' | 'nintendo' | 'drums';
+export type ThemeType = 'xbox' | 'ps' | 'nintendo' | 'drums' | 'pro-drums';
 export interface BtnCfg { label: string; color: string; w: number; h: number; round: boolean; command?: GamepadCommand; appearance?: 'icon' | 'pad'; icon?: ButtonIconName }
 export interface Profile { id: string; name: string }
