@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import type { Pos } from './types';
 import { clamp } from './utils';
 
@@ -15,10 +15,13 @@ export const GpJoystick: React.FC<{
   const stickTouch = useRef<number | null>(null);
   const dragTouch = useRef<{ tid: number; sx: number; sy: number; ox: number; oy: number; moved: boolean } | null>(null);
 
-  const onMoveRef = useRef(onMove); onMoveRef.current = onMove;
-  const onDragRef = useRef(onDrag); onDragRef.current = onDrag;
-  const editRef = useRef(editMode); editRef.current = editMode;
-  const onSelectRef = useRef(onSelect); onSelectRef.current = onSelect;
+  const onMoveRef = useRef(onMove);
+  const onDragRef = useRef(onDrag);
+  const editRef = useRef(editMode);
+  const onSelectRef = useRef(onSelect);
+  useLayoutEffect(() => { onMoveRef.current = onMove; onDragRef.current = onDrag; editRef.current = editMode; onSelectRef.current = onSelect; });
+  const mouseCleanup = useRef<(() => void) | null>(null);
+  const lastTouchAt = useRef(-Infinity);
 
   const joySize = pos.w ?? 120;
   const knobSize = Math.round(joySize * 0.4);
@@ -70,7 +73,7 @@ export const GpJoystick: React.FC<{
       if (dt) {
         for (let i = 0; i < e.changedTouches.length; i++) {
           if (e.changedTouches[i].identifier === dt.tid) {
-            if (!dt.moved) onSelectRef.current();
+            if (!dt.moved && e.type !== 'touchcancel') onSelectRef.current();
             dragTouch.current = null;
           }
         }
@@ -88,15 +91,32 @@ export const GpJoystick: React.FC<{
     };
     document.addEventListener('touchmove', move, { passive: false });
     document.addEventListener('touchend', end);
-    return () => { document.removeEventListener('touchmove', move); document.removeEventListener('touchend', end); };
-  }, [canvasRef, calcStick]);
+    document.addEventListener('touchcancel', end);
+    const release = () => {
+      dragTouch.current = null;
+      mouseCleanup.current?.(); mouseCleanup.current = null;
+      if (stickTouch.current !== null) { stickTouch.current = null; setKnob({ x: 0, y: 0 }); onMoveRef.current(0, 0); }
+    };
+    const visibility = () => { if (document.hidden) release(); };
+    window.addEventListener('blur', release);
+    window.addEventListener('pagehide', release);
+    document.addEventListener('visibilitychange', visibility);
+    return () => {
+      document.removeEventListener('touchmove', move); document.removeEventListener('touchend', end);
+      document.removeEventListener('touchcancel', end); window.removeEventListener('blur', release);
+      window.removeEventListener('pagehide', release); document.removeEventListener('visibilitychange', visibility);
+      release();
+    };
+  }, [canvasRef, calcStick, editMode]);
 
   const onTouchStart = (e: React.TouchEvent) => {
-    e.preventDefault(); e.stopPropagation();
+    e.stopPropagation();
+    lastTouchAt.current = performance.now();
     const t = e.changedTouches[0];
     if (editRef.current) {
       dragTouch.current = { tid: t.identifier, sx: t.clientX, sy: t.clientY, ox: pos.x, oy: pos.y, moved: false };
     } else {
+      if (stickTouch.current !== null) return;
       stickTouch.current = t.identifier;
       calcStick(t.clientX, t.clientY);
     }
@@ -105,6 +125,8 @@ export const GpJoystick: React.FC<{
   // Mouse support for desktop
   const onMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (e.button !== 0 || performance.now() - lastTouchAt.current < 800) return;
+    mouseCleanup.current?.();
     if (editMode) {
       const sx = e.clientX, sy = e.clientY, ox = pos.x, oy = pos.y;
       let moved = false;
@@ -120,16 +142,20 @@ export const GpJoystick: React.FC<{
       const mu = () => {
         if (!moved) onSelectRef.current();
         document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
+        mouseCleanup.current = null;
       };
       document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
+      mouseCleanup.current = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
     } else {
       calcStick(e.clientX, e.clientY);
       const mm = (me: MouseEvent) => calcStick(me.clientX, me.clientY);
       const mu = () => {
         setKnob({ x: 0, y: 0 }); onMoveRef.current(0, 0);
         document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
+        mouseCleanup.current = null;
       };
       document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
+      mouseCleanup.current = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); setKnob({ x: 0, y: 0 }); onMoveRef.current(0, 0); };
     }
   };
 

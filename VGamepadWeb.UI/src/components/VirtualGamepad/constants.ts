@@ -81,11 +81,22 @@ export const THEMES: Record<ThemeType, Record<string, BtnCfg>> = {
     // Stick clicks: analog-l-click=U+21BA, analog-r-click=U+21BB
     LS:    { label: '\u21BA', color: '#334155', w: 34, h: 34, round: true  },
     RS:    { label: '\u21BB', color: '#334155', w: 34, h: 34, round: true  },
+  },
+  drums: {
+    DrumRed: { label: 'RED', color: '#ef4444', w: 136, h: 136, round: true, command: 'B', appearance: 'pad' },
+    DrumYellow: { label: 'YELLOW', color: '#facc15', w: 302, h: 302, round: true, command: 'Y', appearance: 'pad' },
+    DrumBlue: { label: 'BLUE', color: '#3b82f6', w: 310, h: 310, round: true, command: 'X', appearance: 'pad' },
+    DrumGreen: { label: 'GREEN', color: '#22c55e', w: 138, h: 138, round: true, command: 'A', appearance: 'pad' },
+    Kick: { label: 'KICK', color: '#f97316', w: 812, h: 80, round: false, command: 'LB', appearance: 'pad' },
+    Start: { label: '☰', color: '#64748b', w: 48, h: 34, round: false, command: 'Start', appearance: 'pad' },
   }
 };
 
 export const BTN_IDS = Object.keys(THEMES.xbox);
 export const STICK_IDS = ['LeftStick', 'RightStick'] as const;
+
+export function getButtonIds(theme: ThemeType): string[] { return Object.keys(THEMES[theme]); }
+export function getStickIds(theme: ThemeType): readonly string[] { return theme === 'drums' ? [] : STICK_IDS; }
 
 export const DEFAULT_LAYOUT: GamepadLayout = {
   version: 2,

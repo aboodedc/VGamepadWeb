@@ -2,6 +2,19 @@ export type Language = 'ar' | 'en';
 
 export const translations = {
   ar: {
+    width: 'العرض', height: 'الارتفاع', diameter: 'القطر', keepProportions: 'الحفاظ على النسب',
+    command: 'زر اليد المرسل', appearance: 'المظهر', iconStyle: 'أيقونة', padStyle: 'لوحة ملونة',
+    padLabel: 'التسمية', padColor: 'اللون', screenOptions: 'خيارات الشاشة', standalone: 'تطبيق مستقل',
+    standaloneActive: 'أنت تستخدم وضع التطبيق المستقل بالفعل. هذا يختلف عن ملء الشاشة الأصلي.',
+    fullscreenUnavailable: 'هذا المتصفح لا يتيح ملء الشاشة لهذه الصفحة. لم يتم تفعيل ملء الشاشة.',
+    fullscreenRejected: 'لم يسمح المتصفح بملء الشاشة. يمكنك المحاولة مجددًا بالزر أو استخدام وضع اللعب.',
+    details: 'تفاصيل الخطأ', gameMode: 'وضع اللعب',
+    gameModeDescription: 'يخفي وضع اللعب شريط التحكم الخاص بالتطبيق. قد تبقى أشرطة المتصفح ظاهرة.',
+    homeScreenTitle: 'على iPhone: أضف إلى الشاشة الرئيسية',
+    homeScreenInstructions: 'افتح هذا الرابط في Safari، ثم مشاركة ← إضافة إلى الشاشة الرئيسية. فعّل «فتح كتطبيق ويب» إن ظهر، وافتح التطبيق من الأيقونة الجديدة.',
+    homeScreenStorage: 'قد يختلف التخزين بين المتصفح والتطبيق المستقل. صدّر تخطيطك الحالي ثم استورده هناك إذا لزم الأمر.',
+    showToolbar: 'إظهار شريط التحكم',
+    rotateForDrums: 'أدر الهاتف أفقيًا لاستخدام لوحات الطبول بكلتا اليدين.',
     // Connection status
     connected: 'متصل',
     connecting: 'جاري...',
@@ -27,7 +40,7 @@ export const translations = {
     // Settings Modal
     settings: 'الإعدادات',
     profile: 'البروفايل (تخصيص الأزرار)',
-    buttonStyle: 'شكل الأزرار (التصميم)',
+    buttonStyle: 'تخطيط التحكم',
     xboxDefault: 'Xbox (الافتراضي)',
     controllerTypeLabel: 'نوع اليد (التي تظهر في النظام)',
     enableVibration: 'تفعيل الاهتزاز',
@@ -77,6 +90,19 @@ export const translations = {
     aboutMIT: 'محمي برخصة MIT المفتوحة',
   },
   en: {
+    width: 'Width', height: 'Height', diameter: 'Diameter', keepProportions: 'Keep proportions',
+    command: 'Gamepad command', appearance: 'Appearance', iconStyle: 'Controller icon', padStyle: 'Colored pad',
+    padLabel: 'Label', padColor: 'Color', screenOptions: 'Screen options', standalone: 'Standalone',
+    standaloneActive: 'You are already running as a standalone web app. This is separate from native fullscreen.',
+    fullscreenUnavailable: 'This browser does not offer fullscreen for this page. Native fullscreen has not been activated.',
+    fullscreenRejected: 'The browser did not allow fullscreen. Try the button again or use Game mode.',
+    details: 'Error details', gameMode: 'Game mode',
+    gameModeDescription: 'Game mode hides the app toolbar. Browser bars may remain visible.',
+    homeScreenTitle: 'On iPhone: Add to Home Screen',
+    homeScreenInstructions: 'Open this address in Safari, then Share → Add to Home Screen. Enable “Open as Web App” if offered, then launch from the new icon.',
+    homeScreenStorage: 'Browser and standalone storage may differ. Export your current layout and import it there if needed.',
+    showToolbar: 'Show toolbar',
+    rotateForDrums: 'Rotate your phone to landscape to play drums with both thumbs.',
     // Connection status
     connected: 'Connected',
     connecting: 'Connecting...',
@@ -102,7 +128,7 @@ export const translations = {
     // Settings Modal
     settings: 'Settings',
     profile: 'Profile (Button Layout)',
-    buttonStyle: 'Button Style (Theme)',
+    buttonStyle: 'Controller layout',
     xboxDefault: 'Xbox (Default)',
     controllerTypeLabel: 'Controller Type (shown in system)',
     enableVibration: 'Enable Vibration',

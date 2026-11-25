@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import type { GamepadLayout } from './types';
-import { BTN_IDS, STICK_IDS } from './constants';
 import { useLanguage } from './LanguageContext';
 import type { Language } from './i18n';
 import { AboutModal } from './AboutModal';
@@ -12,6 +11,9 @@ interface TopBarProps {
   isBarHidden: boolean;
   setIsBarHidden: (hidden: boolean) => void;
   isFullscreen: boolean;
+  standalone: boolean;
+  fullscreenSupported: boolean;
+  fullscreenPending: boolean;
   toggleFullscreen: () => void;
   editMode: boolean;
   setEditMode: (mode: boolean) => void;
@@ -25,6 +27,7 @@ interface TopBarProps {
   fileRef: React.RefObject<HTMLInputElement | null>;
   importLayout: (e: React.ChangeEvent<HTMLInputElement>) => void;
   layout: GamepadLayout;
+  controlIds: string[];
   toggleVisibility: (id: string) => void;
   showHitboxes: boolean;
   setShowHitboxes: (show: boolean) => void;
@@ -39,7 +42,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   connStatus, latency, controllerId, isBarHidden, setIsBarHidden, isFullscreen, toggleFullscreen,
   editMode, setEditMode, menuOpen, setMenuOpen, visibilityMenuOpen, setVisibilityMenuOpen,
   setSettingsOpen, resetLayout, exportLayout, fileRef, importLayout, layout, toggleVisibility,
-  showHitboxes, setShowHitboxes
+  showHitboxes, setShowHitboxes, standalone, fullscreenSupported, fullscreenPending, controlIds
 }) => {
   const { t, language, setLanguage } = useLanguage();
   const [langMenuOpen, setLangMenuOpen] = useState(false);
@@ -65,16 +68,14 @@ export const TopBar: React.FC<TopBarProps> = ({
           </span>
         )}
         <div className="gp-spacer" />
-        {isFullscreen && (
-          <button className="gp-bar-btn" onClick={() => setIsBarHidden(true)}>
-            {t.hide}
-          </button>
-        )}
+        {standalone && <span className="gp-display-badge">{t.standalone}</span>}
+        <button className="gp-bar-btn" onClick={() => setIsBarHidden(true)}>{t.hide}</button>
         <button
           className="gp-bar-btn"
           onClick={toggleFullscreen}
+          disabled={fullscreenPending}
         >
-          {isFullscreen ? t.minimize : t.fullscreen}
+          {isFullscreen ? t.minimize : standalone || !fullscreenSupported ? t.screenOptions : t.fullscreen}
         </button>
         <button
           className={`gp-bar-btn ${editMode ? 'done' : ''}`}
@@ -97,7 +98,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             </button>
             {visibilityMenuOpen && (
               <div className="gp-dropdown" style={{ maxHeight: '60vh', overflowY: 'auto', minWidth: '150px' }}>
-                {[...BTN_IDS, ...STICK_IDS].map(id => {
+                {controlIds.map(id => {
                   const isHidden = layout.controls[id]?.hidden === true;
                   return (
                     <button key={id} onClick={() => toggleVisibility(id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -156,6 +157,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {isBarHidden && (
         <button 
           className="promptfont gp-show-bar-btn"
+          aria-label={t.showToolbar}
           onClick={() => setIsBarHidden(false)}
         >
           {"\u{1F441}"}
